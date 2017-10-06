@@ -1,0 +1,4 @@
+#!/bin/sh
+
+export ANSIBLE_MODULE_UTILS=$(pwd)/library/module_utils/
+export ANSIBLE_LIBRARY=$(pwd)/library/
