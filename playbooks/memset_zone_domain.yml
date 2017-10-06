@@ -1,0 +1,17 @@
+- hosts: localhost
+  become: false
+
+  vars_prompt:
+    - name: do_it
+      prompt: present or absent?
+      default: 'present'
+      private: no
+
+  tasks:
+    - name: "Set zone domain to {{ do_it }}"
+      local_action:
+        module: memset_zone_domain
+        api_key: dcf089a2896940da9ffefb307ef49ccd
+        state: "{{ do_it }}"
+        domain: 111222333.com
+        zone: 111222333444555aaaaaaa

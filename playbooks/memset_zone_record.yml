@@ -1,0 +1,42 @@
+- hosts: localhost
+  become: false
+
+    vars_prompt:
+    - name: do_it
+      prompt: present or absent?
+      default: 'present'
+      private: no
+
+  tasks:
+    - name: "Set zone record to {{ do_it }}"
+      local_action:
+        module: memset_zone_record
+        api_key: dcf089a2896940da9ffefb307ef49ccd
+        state: "{{ do_it }}"
+        zone: "{{ item.zone }}"
+        type: "{{ item.type }}"
+        record: "{{ item.record }}"
+        address: "{{ item.address }}"
+        ttl: "{{ item.ttl }}"
+        priority: "{{ item.priority }}"
+        relative: "{{ item.relative }}"
+      with_items:
+        - {
+          zone: '111222333444555aaaaaaa',
+          type: 'A',
+          record: 'www',
+          address: '1.2.3.4',
+          ttl: 300,
+          priority: 10,
+          relative: True
+        }
+
+
+
+# zone_id  ## REQUIRED (will require zone + loop through list)
+# type     ## REQUIRED
+# record   ## REQUIRED BY API (can be empty, but still required)
+# address  ## REQUIRED
+# ttl
+# priority (MX/SRV only, =< 999)
+# relative (CNAME/MX/NS/SRV only, boolean)

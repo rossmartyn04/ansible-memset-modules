@@ -1,0 +1,7 @@
+- hosts: localhost
+  become: false
+  tasks:
+    - name: Submit DNS reload request
+      local_action: memset_dns_reload
+        api_key=dcf089a2896940da9ffefb307ef49ccd
+        poll=true

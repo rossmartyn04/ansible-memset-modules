@@ -1,0 +1,11 @@
+- hosts: localhost
+  become: false
+  tasks:
+    - name: Add or remove zone
+      local_action:
+        module: memset_zone
+        api_key: dcf089a2896940da9ffefb307ef49ccd
+        state: present
+        name: 123456789
+        ttl: 300
+
