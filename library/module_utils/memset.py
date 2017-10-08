@@ -57,7 +57,7 @@ def check_zone(**kwargs):
     '''
     Returns true if zone already exists, and false if not.
     '''
-    _, has_failed, msg, response = memset_api_call(api_key=kwargs['api_key'], api_method=kwargs['api_method'], payload=kwargs['payload'])
+    _, has_failed, msg, response = memset_api_call(api_key=kwargs['api_key'], api_method=kwargs['api_method'])
 
     if response.status_code in [201, 200]:
         for zone in response.json():
