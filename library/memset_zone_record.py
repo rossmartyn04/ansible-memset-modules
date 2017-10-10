@@ -120,35 +120,35 @@ def create_or_delete(**kwargs):
     has_failed = False
     has_changed = False
     msg = ''
-    payload = kwargs['payload']
+    payload = opts['payload']
     api_method = 'dns.zone_list'
 
-    zone_exists = check_zone(api_key=kwargs['api_key'], api_method=api_method, name=kwargs['name'])
+    zone_exists = check_zone(api_key=opts['api_key'], api_method=api_method, name=opts['zone'])
 
-    if kwargs['state'] == 'present':
+    if opts['state'] == 'present':
         if zone_exists:
             # get a list of all zones and find the zone's ID
-            _, _, _, response = memset_api_call(api_key=kwargs['api_key'], api_method=api_method)
+            _, _, _, response = memset_api_call(api_key=opts['api_key'], api_method=api_method)
             for zone in response.json():
-                if zone['nickname'] == kwargs['name']:
+                if zone['nickname'] == opts['zone']:
                     break
             # get a list of all records (can't limit by zone) and iterate to find relevant record
             api_method = 'dns.zone_record_list'
-            _, _, _, response = memset_api_call(api_key=kwargs['api_key'], api_method=api_method)
+            _, _, _, response = memset_api_call(api_key=opts['api_key'], api_method=api_method)
             
-            # assemble our new record
+            # assemble the user-provided record
             new_record = dict()
-            new_record['zone_id'] == zone['id']
-            new_record['priority'] == kwargs['priority']
-            new_record['address'] == kwargs['address']
-            new_record['relative'] == kwargs['relative']
-            new_record['record'] == kwargs['record']
-            new_record['ttl'] == kwargs['ttl']
-            new_record['type'] == kwargs['type']
+            new_record['zone_id'] = zone['id']
+            new_record['priority'] = opts['priority']
+            new_record['address'] = opts['address']
+            new_record['relative'] = opts['relative']
+            new_record['record'] = opts['record']
+            new_record['ttl'] = opts['ttl']
+            new_record['type'] = opts['type']
 
             # check if a matching record exists
             for record in response.json():
-                if record['zone_id'] == zone['id'] and record['address'] == kwargs['address'] and record['record'] == kwargs['record'] and record['type'] == kwargs['type']:
+                if record['zone_id'] == zone['id'] and record['record'] == opts['record'] and record['type'] == opts['type']:
                     # record exists, add ID to payload
                     new_record['id'] == record['id']
                     # check if existing record matches user-provided values
@@ -158,32 +158,30 @@ def create_or_delete(**kwargs):
                         # merge dicts ensuring we change any updated values
                         payload = {**record, **new_record}
                         api_method = 'dns.zone_record_update'
-                        break
                 else:
                     # no record found, so we create it
                     api_method = 'dns.zone_record_create'
                     payload = new_record
-                    break
 
-            has_changed, has_failed, _, response = memset_api_call(api_key=kwargs['api_key'], api_method=api_method, payload=payload)
+            has_changed, has_failed, _, response = memset_api_call(api_key=opts['api_key'], api_method=api_method, payload=payload)
         else:
             has_failed = True
             msg = 'Zone must exist before records are created'
 
-    if kwargs['state'] == 'absent':
+    if opts['state'] == 'absent':
         if zone_exists:
-            _, _, _, response = memset_api_call(api_key=kwargs['api_key'], api_method=api_method, payload=payload)
+            _, _, _, response = memset_api_call(api_key=opts['api_key'], api_method=api_method, payload=payload)
             counter = 0
             for zone in response.json():
-                if zone['nickname'] == kwargs['name']:
+                if zone['nickname'] == opts['name']:
                     counter += 1
             if counter == 1:
                 for zone in response.json():
-                    if zone['nickname'] == kwargs['name']:
+                    if zone['nickname'] == opts['name']:
                         zone_id = zone['id']
                 api_method = 'dns.zone_delete'
                 payload['id'] = zone_id
-                has_changed, has_failed, msg, response = memset_api_call(api_key=kwargs['api_key'], api_method=api_method, payload=payload)
+                has_changed, has_failed, msg, response = memset_api_call(api_key=opts['api_key'], api_method=api_method, payload=payload)
             else:
                 has_failed = True
                 msg = 'Multiple zones with the same name exist.'
@@ -221,7 +219,7 @@ def main():
     opts['state']       = module.params['state']
     opts['api_key']     = module.params['api_key']
     opts['zone']        = module.params['zone']
-    opts['record_type'] = module.params['record_type']
+    opts['type']        = module.params['type']
     opts['record']      = module.params['record']
     opts['address']     = module.params['address']
     try:
@@ -243,7 +241,7 @@ def main():
     else:
         opts['relative'] = module.params['relative']
 
-    if opts['record_type'] in [ 'A', 'AAAA' ]:
+    if opts['type'] in [ 'A', 'AAAA' ]:
         if not ipaddress.ip_address(opts['address']):
             module.fail_json(failed=True, msg='IP address is not valid.')
     if opts['priority']:
