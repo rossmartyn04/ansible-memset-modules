@@ -1,2 +1,4 @@
 library/seq.txt
 playbooks/test1.yml
+__pycache__
+*~
