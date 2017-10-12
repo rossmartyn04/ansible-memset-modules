@@ -15,47 +15,79 @@ ANSIBLE_METADATA = {
 
 DOCUMENTATION = '''
 ---
-module: memset_zone
+module: memset_zone_record
 author: "Simon Weald (@analbeard)"
-version_added: "2.3"
-short_description: Manage zones
+version_added: "2.4"
+short_description: Manage zone records
 notes:
   - Zones can be thought of as a logical group of domains, all of which share the
     same DNS records (i.e. they point to the same IP). An API key generated via the 
     Memset customer control panel is needed with the following minimum scope:
     `dns.zone_create`, `dns.zone_delete`, `dns.zone_list`.
 description:
-    - Manage DNS zones. These form the basis of grouping similar domains together.
+    - Manage individual zone records.
 options:
     api_key:
         required: true
         description:
             - The API key obtained from the Memset control panel
-    name:
+    zone:
         required: true
         description:
-            - The zone nickname; usually the same as the main domain. Ensure this 
-              value has at most 250 characters.
+            - The name of the zone to add this record to
+    record_type:
+        required: true
+        description:
+            - The type of DNS record to create. Must be one of:
+              'A', 'AAAA', 'CNAME', 'MX', 'NS', 'SRV', 'TXT'
+    record:
+        required: true
+        description:
+            - The subdomain to create
+    address:
+        required: true
+        description:
+            - The address for this record (can be IP or text string depending on record type)
     ttl:
         required: false
         description:
-            - The default TTL for all records created in the zone. This must be a
-              valid int from https://www.memset.com/apidocs/methods_dns.html#dns.zone_create
+            - The record's TTL in seconds (will inherit zone's TTL if not explicitly set). 
+              This must be one of: 0, 300, 600, 900, 1800, 3600, 7200, 10800, 21600, 43200, 86400
+              (where 0 implies inheritance from the zone)
+    priority:
+        required: false
+        description;
+            - SRV/TXT record priority, in the range 0 > 999 (inclusive)
+    relative:
+        required: false
+        description:
+            - If set then the current domain is added onto the address field for CNAME, MX, NS 
+              and SRV record types.
 '''
 
 EXAMPLES = '''
-# Create the zone 'test'
-- name: create zone
+# Create DNS record for www.domain.com
+- name: create DNS record
   local_action:
     module: memset_zone_record
     api_key: dcf089a2896940da9ffefb307ef49ccd
-    state: absent
-    zone: testzone
+    state: present
+    zone: domain.com
     type: A
     record: www
     address: 1.2.3.4
-    ttl: 600
-    relative: True
+    ttl: 300
+    relative: false
+
+# create an SPF record for domain.com
+- name: create SPF record for domain.com
+  local_action:
+    module: memset_zone_record
+    api_key: dcf089a2896940da9ffefb307ef49ccd
+    state: present
+    zone: domain.com
+    type: TXT
+    address: "v=spf1 +a +mx +ip4:a1.2.3.4 ?all"
 '''
 
 RETURN = ''' # '''
@@ -73,7 +105,6 @@ def create_or_delete(**kwargs):
         if zone_exists:
             # assemble the user-provided record
             new_record = dict()
-            new_record['zone_id'] = zone['id']
             new_record['priority'] = opts['priority']
             new_record['address'] = opts['address']
             new_record['relative'] = opts['relative']
@@ -86,6 +117,9 @@ def create_or_delete(**kwargs):
             for zone in response.json():
                 if zone['nickname'] == opts['zone']:
                     break
+
+            # add zone's ID to the new record
+            new_record['zone_id'] = zone['id']
 
             # get a list of all records ( as we can't limit records by zone)
             api_method = 'dns.zone_record_list'
@@ -118,36 +152,38 @@ def create_or_delete(**kwargs):
             has_failed = True
             module.fail_json(failed=True, msg='Zone must exist before records are created')
 
-
-
-
     if opts['state'] == 'absent':
         if zone_exists:
-            _, _, _, response = memset_api_call(api_key=opts['api_key'], api_method=api_method, payload=payload)
-            counter = 0
+            # get a list of all zones and find the zone's ID
+            _, _, _, response = memset_api_call(api_key=opts['api_key'], api_method=api_method)
             for zone in response.json():
-                if zone['nickname'] == opts['name']:
-                    counter += 1
-            if counter == 1:
-                for zone in response.json():
-                    if zone['nickname'] == opts['name']:
-                        zone_id = zone['id']
-                api_method = 'dns.zone_delete'
-                payload['id'] = zone_id
-                has_changed, has_failed, msg, response = memset_api_call(api_key=opts['api_key'], api_method=api_method, payload=payload)
-            else:
-                has_failed = True
-                msg = 'Multiple zones with the same name exist.'
-        else:
-            has_failed = False
-            
-    if has_failed:
-        module.fail_json(failed=True, msg=msg)
+                if zone['nickname'] == opts['zone']:
+                    break
 
-    if has_changed:
-        module.exit_json(changed=True, msg=msg)
-    else:
-        module.exit_json(changed=False, msg=msg)
+            api_method = 'dns.zone_record_list'
+            _, _, _, response = memset_api_call(api_key=opts['api_key'], api_method=api_method)
+
+           records = [record for record in response.json() if record['zone_id'] == zone['id'] and record['record'] == opts['record'] and record['type'] == opts['type']]
+
+           # if we have any matches, update them
+            if records:
+                for zone_record in records:
+                    payload['id'] = zone_record['id']
+                    api_method = 'dns.zone_record_delete'
+                    has_changed, has_failed, msg, response = memset_api_call(api_key=opts['api_key'], api_method=api_method, payload=payload)
+
+
+
+
+
+
+    # if has_failed:
+    #     module.fail_json(failed=True, msg=msg)
+
+    # if has_changed:
+    #     module.exit_json(changed=True, msg=msg)
+    # else:
+    #     module.exit_json(changed=False, msg=msg)
 
 def main():
     global module
