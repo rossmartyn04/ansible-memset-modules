@@ -44,7 +44,7 @@ options:
         required: true
         description:
             - The subdomain to create
-    address:
+    data:
         required: true
         description:
             - The address for this record (can be IP or text string depending on record type)
@@ -75,7 +75,7 @@ EXAMPLES = '''
     zone: domain.com
     type: A
     record: www
-    address: 1.2.3.4
+    data: 1.2.3.4
     ttl: 300
     relative: false
 
@@ -87,7 +87,7 @@ EXAMPLES = '''
     state: present
     zone: domain.com
     type: TXT
-    address: "v=spf1 +a +mx +ip4:a1.2.3.4 ?all"
+    data: "v=spf1 +a +mx +ip4:a1.2.3.4 ?all"
 '''
 
 RETURN = ''' # '''
@@ -96,6 +96,7 @@ def create_or_delete(**kwargs):
     has_failed = False
     has_changed = False
     msg = ''
+    opts = kwargs['opts']
     payload = opts['payload']
     api_method = 'dns.zone_list'
 
@@ -124,7 +125,7 @@ def create_or_delete(**kwargs):
             new_record['relative'] = opts['relative']
             new_record['record'] = opts['record']
             new_record['ttl'] = opts['ttl']
-            new_record['type'] = opts['type']
+            new_record['type'] = str(opts['type'])
 
             # if we have any matches, update them
             if records:
@@ -136,7 +137,8 @@ def create_or_delete(**kwargs):
                         module.exit_json(changed=False, msg=msg)
                     else:
                         # merge dicts ensuring we change any updated values
-                        payload = {**zone_record, **new_record}
+                        payload = zone_record.copy()
+                        payload.update(new_record)
                         api_method = 'dns.zone_record_update'
                         has_changed, has_failed, msg, response = memset_api_call(api_key=opts['api_key'], api_method=api_method, payload=payload)
                     if has_failed:
@@ -146,6 +148,7 @@ def create_or_delete(**kwargs):
                 api_method = 'dns.zone_record_create'
                 payload = new_record
                 has_changed, has_failed, _, response = memset_api_call(api_key=opts['api_key'], api_method=api_method, payload=payload)
+
         if opts['state'] == 'absent':
             # if we have any matches, delete them
             if records:
@@ -168,9 +171,9 @@ def main():
             state       = dict(required=True, choices=[ 'present', 'absent' ], type='str'),
             api_key     = dict(required=True, type='str', no_log=True),
             zone        = dict(required=True, type='str'),
-            record_type = dict(required=True, aliases=['type'], choices=[ 'A', 'AAAA', 'CNAME', 'MX', 'NS', 'SRV', 'TXT' ], type='str'),
-            record      = dict(required=True, default='', type='str'),
-            address     = dict(required=True, aliases=['ip'], type='str'),
+            type        = dict(required=True, aliases=['type'], choices=[ 'A', 'AAAA', 'CNAME', 'MX', 'NS', 'SRV', 'TXT' ], type='str'),
+            data        = dict(required=True, aliases=['ip'], type='str'),
+            record      = dict(required=False, default='', type='str'),
             ttl         = dict(required=False, choices=[ 0, 300, 600, 900, 1800, 3600, 7200, 10800, 21600, 43200, 86400 ], type='int'),
             priority    = dict(required=False, type='int'),
             relative    = dict(required=False, type='bool')
@@ -178,45 +181,44 @@ def main():
         supports_check_mode=True
     )
 
-    opts = dict()
-
-    opts['payload']     = dict()
-    opts['state']       = module.params['state']
-    opts['api_key']     = module.params['api_key']
-    opts['zone']        = module.params['zone']
-    opts['type']        = module.params['type']
-    opts['record']      = module.params['record']
-    opts['address']     = module.params['address']
+    args = dict()
+    args['payload']     = dict()
+    args['state']       = module.params['state']
+    args['api_key']     = module.params['api_key']
+    args['zone']        = module.params['zone']
+    args['type']        = module.params['type']
+    args['record']      = module.params['record']
+    args['address']     = module.params['data']
     try:
         module.params['ttl']
     except KeyError:
-        opts['ttl'] = 0
+        args['ttl'] = 0
     else:
-        opts['ttl'] = module.params['ttl']
+        args['ttl'] = module.params['ttl']
     try:
         module.params['priority']
     except KeyError:
-        opts['priority'] = 0
+        args['priority'] = 0
     else:
-        opts['priority'] = module.params['priority']
+        args['priority'] = module.params['priority']
     try:
         module.params['relative']
     except KeyError:
-        opts['relative'] = False
+        args['relative'] = False
     else:
-        opts['relative'] = module.params['relative']
-
-    if opts['type'] in [ 'A', 'AAAA' ]:
-        if not ipaddress.ip_address(opts['address']):
-            module.fail_json(failed=True, msg='IP address is not valid.')
-    if opts['priority']:
-        if not 0 <= opts['priority'] <= 999:
+        args['relative'] = module.params['relative']
+    print(type(args['address']))
+    # if args['type'] in [ 'A', 'AAAA' ]:
+    #     if not ipaddress.ip_address(args['address']):
+    #         module.fail_json(failed=True, msg='IP address is not valid.')
+    if args['priority']:
+        if not 0 <= args['priority'] <= 999:
             module.fail_json(failed=True, msg='Priority must be in the range 0 > 999 (inclusive).')
 
     if module.check_mode:
         check(opts)
     else:
-        create_or_delete(opts)
+        create_or_delete(opts=args)
 
 from ansible.module_utils.basic import AnsibleModule
 
