@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-from __future__ import (absolute_import, division, print_function)
+# from __future__ import (absolute_import, division, print_function)
 from ansible.module_utils.memset import check_zone
 from ansible.module_utils.memset import memset_api_call
 from ansible.module_utils.memset import get_zone_id
@@ -96,6 +96,7 @@ def create_or_delete(**kwargs):
     has_failed = False
     has_changed = False
     msg = ''
+    response = None
     opts = kwargs['opts']
     payload = opts['payload']
     api_method = 'dns.zone_list'
@@ -125,29 +126,26 @@ def create_or_delete(**kwargs):
             new_record['relative'] = opts['relative']
             new_record['record'] = opts['record']
             new_record['ttl'] = opts['ttl']
-            new_record['type'] = str(opts['type'])
+            new_record['type'] = opts['type']
 
             # if we have any matches, update them
             if records:
                 for zone_record in records:
                     # record exists, add ID to payload
                     new_record['id'] = zone_record['id']
-                    # check if existing record matches user-provided values
                     if zone_record == new_record:
-                        module.exit_json(changed=False, msg=msg)
+                        has_changed = False
                     else:
                         # merge dicts ensuring we change any updated values
                         payload = zone_record.copy()
                         payload.update(new_record)
                         api_method = 'dns.zone_record_update'
                         has_changed, has_failed, msg, response = memset_api_call(api_key=opts['api_key'], api_method=api_method, payload=payload)
-                    if has_failed:
-                        module.fail_json(failed=True, msg=msg)
             else:
                 # no record found, so we need to create it
                 api_method = 'dns.zone_record_create'
                 payload = new_record
-                has_changed, has_failed, _, response = memset_api_call(api_key=opts['api_key'], api_method=api_method, payload=payload)
+                has_changed, has_failed, msg, response = memset_api_call(api_key=opts['api_key'], api_method=api_method, payload=payload)
 
         if opts['state'] == 'absent':
             # if we have any matches, delete them
@@ -159,10 +157,11 @@ def create_or_delete(**kwargs):
     else:
         if opts['state'] == 'present':
             has_failed = True
-            module.fail_json(failed=True, msg='Zone must exist before records are created')
+            msg = 'Zone must exist before records are created'
         if opts['state'] == 'absent':
             has_changed = False
-            module.exit_json(changed=False, msg=msg)
+
+    return(has_changed, has_failed, msg, response)
 
 def main():
     global module
@@ -174,9 +173,9 @@ def main():
             type        = dict(required=True, aliases=['type'], choices=[ 'A', 'AAAA', 'CNAME', 'MX', 'NS', 'SRV', 'TXT' ], type='str'),
             data        = dict(required=True, aliases=['ip'], type='str'),
             record      = dict(required=False, default='', type='str'),
-            ttl         = dict(required=False, choices=[ 0, 300, 600, 900, 1800, 3600, 7200, 10800, 21600, 43200, 86400 ], type='int'),
-            priority    = dict(required=False, type='int'),
-            relative    = dict(required=False, type='bool')
+            ttl         = dict(required=False, default=0, choices=[ 0, 300, 600, 900, 1800, 3600, 7200, 10800, 21600, 43200, 86400 ], type='int'),
+            priority    = dict(required=False, default=0, type='int'),
+            relative    = dict(required=False, default=False, type='bool')
         ),
         supports_check_mode=True
     )
@@ -189,25 +188,10 @@ def main():
     args['type']        = module.params['type']
     args['record']      = module.params['record']
     args['address']     = module.params['data']
-    try:
-        module.params['ttl']
-    except KeyError:
-        args['ttl'] = 0
-    else:
-        args['ttl'] = module.params['ttl']
-    try:
-        module.params['priority']
-    except KeyError:
-        args['priority'] = 0
-    else:
-        args['priority'] = module.params['priority']
-    try:
-        module.params['relative']
-    except KeyError:
-        args['relative'] = False
-    else:
-        args['relative'] = module.params['relative']
-    print(type(args['address']))
+    args['priority']    = module.params['priority']
+    args['relative'] = module.params['relative']
+    args['ttl'] = module.params['ttl']
+
     # if args['type'] in [ 'A', 'AAAA' ]:
     #     if not ipaddress.ip_address(args['address']):
     #         module.fail_json(failed=True, msg='IP address is not valid.')
@@ -215,10 +199,15 @@ def main():
         if not 0 <= args['priority'] <= 999:
             module.fail_json(failed=True, msg='Priority must be in the range 0 > 999 (inclusive).')
 
-    if module.check_mode:
-        check(opts)
+    # if module.check_mode:
+    #     check(opts)
+    # else:
+    has_changed, has_failed, msg, response = create_or_delete(opts=args)
+    
+    if has_failed:
+        module.fail_json(failed=has_failed, msg=msg)
     else:
-        create_or_delete(opts=args)
+        module.exit_json(changed=has_changed, msg=msg)
 
 from ansible.module_utils.basic import AnsibleModule
 
