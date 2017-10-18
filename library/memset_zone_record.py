@@ -4,7 +4,6 @@
 from ansible.module_utils.memset import check_zone
 from ansible.module_utils.memset import memset_api_call
 from ansible.module_utils.memset import get_zone_id
-import ipaddress
 __metaclass__ = type
 
 ANSIBLE_METADATA = {
@@ -41,7 +40,7 @@ options:
             - The type of DNS record to create. Must be one of:
               'A', 'AAAA', 'CNAME', 'MX', 'NS', 'SRV', 'TXT'
     record:
-        required: true
+        required: false
         description:
             - The subdomain to create
     data:
@@ -96,13 +95,13 @@ def create_or_delete(**kwargs):
     has_failed = False
     has_changed = False
     msg = ''
-    response = None
+    response = ''
     opts = kwargs['opts']
     payload = opts['payload']
     api_method = 'dns.zone_list'
 
     zone_exists = check_zone(api_key=opts['api_key'], api_method=api_method, name=opts['zone'])
-    
+
     if zone_exists:
         # get a list of all zones and find the zone's ID
         _, _, _, zone_response = memset_api_call(api_key=opts['api_key'], api_method=api_method)
@@ -140,17 +139,26 @@ def create_or_delete(**kwargs):
                         payload = zone_record.copy()
                         payload.update(new_record)
                         api_method = 'dns.zone_record_update'
+                        if opts['check_mode']:
+                            has_changed = True
+                            return(has_changed, has_failed, msg, response)
                         has_changed, has_failed, msg, response = memset_api_call(api_key=opts['api_key'], api_method=api_method, payload=payload)
             else:
                 # no record found, so we need to create it
                 api_method = 'dns.zone_record_create'
                 payload = new_record
+                if opts['check_mode']:
+                    has_changed = True
+                    return(has_changed, has_failed, msg, response)
                 has_changed, has_failed, msg, response = memset_api_call(api_key=opts['api_key'], api_method=api_method, payload=payload)
 
         if opts['state'] == 'absent':
             # if we have any matches, delete them
             if records:
                 for zone_record in records:
+                    if opts['check_mode']:
+                        has_changed = True
+                        return(has_changed, has_failed, msg, response)
                     payload['id'] = zone_record['id']
                     api_method = 'dns.zone_record_delete'
                     has_changed, has_failed, msg, response = memset_api_call(api_key=opts['api_key'], api_method=api_method, payload=payload)
@@ -189,9 +197,9 @@ def main():
     args['record']      = module.params['record']
     args['address']     = module.params['data']
     args['priority']    = module.params['priority']
-    args['relative'] = module.params['relative']
-    args['ttl'] = module.params['ttl']
-
+    args['relative']    = module.params['relative']
+    args['ttl']         = module.params['ttl']
+    args['check_mode']  = module.check_mode
     # if args['type'] in [ 'A', 'AAAA' ]:
     #     if not ipaddress.ip_address(args['address']):
     #         module.fail_json(failed=True, msg='IP address is not valid.')
@@ -199,11 +207,8 @@ def main():
         if not 0 <= args['priority'] <= 999:
             module.fail_json(failed=True, msg='Priority must be in the range 0 > 999 (inclusive).')
 
-    # if module.check_mode:
-    #     check(opts)
-    # else:
     has_changed, has_failed, msg, response = create_or_delete(opts=args)
-    
+
     if has_failed:
         module.fail_json(failed=has_failed, msg=msg)
     else:
