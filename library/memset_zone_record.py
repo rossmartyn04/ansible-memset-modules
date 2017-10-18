@@ -30,38 +30,38 @@ options:
         required: true
         description:
             - The API key obtained from the Memset control panel
-    zone:
+    data:
         required: true
         description:
-            - The name of the zone to add this record to
+            - The address for this record (can be IP or text string depending on record type)
+    priority:
+        required: false
+        description;
+            - SRV/TXT record priority, in the range 0 > 999 (inclusive)
+    record:
+        required: false
+        description:
+            - The subdomain to create
     record_type:
         required: true
         description:
             - The type of DNS record to create. Must be one of:
               'A', 'AAAA', 'CNAME', 'MX', 'NS', 'SRV', 'TXT'
-    record:
+    relative:
         required: false
         description:
-            - The subdomain to create
-    data:
-        required: true
-        description:
-            - The address for this record (can be IP or text string depending on record type)
+            - If set then the current domain is added onto the address field for CNAME, MX, NS 
+              and SRV record types.
     ttl:
         required: false
         description:
             - The record's TTL in seconds (will inherit zone's TTL if not explicitly set). 
               This must be one of: 0, 300, 600, 900, 1800, 3600, 7200, 10800, 21600, 43200, 86400
               (where 0 implies inheritance from the zone)
-    priority:
-        required: false
-        description;
-            - SRV/TXT record priority, in the range 0 > 999 (inclusive)
-    relative:
-        required: false
+    zone:
+        required: true
         description:
-            - If set then the current domain is added onto the address field for CNAME, MX, NS 
-              and SRV record types.
+            - The name of the zone to add this record to
 '''
 
 EXAMPLES = '''
