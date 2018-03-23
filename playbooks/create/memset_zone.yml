@@ -9,7 +9,6 @@
     local_action:
       module: memset_zone
       api_key: "{{ api_key }}"
-      state: present
-      name: aaaatest
+      state: absent
+      name: testymctestface.com
       ttl: 300
-
