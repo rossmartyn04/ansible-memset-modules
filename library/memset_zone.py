@@ -39,6 +39,10 @@ options:
         description:
             - The default TTL for all records created in the zone. This must be a
               valid int from https://www.memset.com/apidocs/methods_dns.html#dns.zone_create
+    force:
+        required: false
+        description:
+            - Forces deletion of a zone and all zone domains/zone records it containsn.
 '''
 
 EXAMPLES = '''
@@ -50,6 +54,15 @@ EXAMPLES = '''
     state: present
     api_key: 5eb86c9196ab03919abcf03857163741
     ttl: 300
+
+# Force zone deletion
+- name: force delete zone
+  local_action:
+    module: memset_zone
+    name: test
+    state: absent
+    api_key: 5eb86c9196ab03919abcf03857163741
+    force: true
 '''
 
 RETURN = ''' # '''
