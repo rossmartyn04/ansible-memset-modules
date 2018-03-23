@@ -118,7 +118,7 @@ def create_or_delete(**kwargs):
                         record_count = len(zone['records'])
                 if (domain_count > 0 or record_count > 0) and kwargs['force'] == False: 
                     msg = 'Zone contains domains or records and force was not used.'
-                    module.fail_json(failed=True, msg=msg, rc=2)
+                    module.fail_json(failed=True, changed=False, msg=msg, rc=1)
                 api_method = 'dns.zone_delete'
                 payload['id'] = zone_id
                 has_changed, has_failed, msg, response = memset_api_call(api_key=kwargs['api_key'], api_method=api_method, payload=payload)
