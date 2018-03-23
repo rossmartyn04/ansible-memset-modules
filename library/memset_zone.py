@@ -114,6 +114,11 @@ def create_or_delete(**kwargs):
                 for zone in response.json():
                     if zone['nickname'] == kwargs['name']:
                         zone_id = zone['id']
+                        domain_count = len(zone['domains'])
+                        record_count = len(zone['records'])
+                if (domain_count > 0 or record_count > 0) and kwargs['force'] == False: 
+                    msg = 'Zone contains domains or records and force was not used.'
+                    module.fail_json(failed=True, msg=msg, rc=2)
                 api_method = 'dns.zone_delete'
                 payload['id'] = zone_id
                 has_changed, has_failed, msg, response = memset_api_call(api_key=kwargs['api_key'], api_method=api_method, payload=payload)
@@ -138,7 +143,8 @@ def main():
             state   = dict(required=True, choices=[ 'present', 'absent' ], type='str'),
             api_key = dict(required=True, type='str', no_log=True),
             name    = dict(required=True, aliases=['nickname'], type='str'),
-            ttl     = dict(required=False, default=0, type='int') 
+            ttl     = dict(required=False, default=0, type='int'),
+            force   = dict(required=False, default=False, type='bool')
         ),
         supports_check_mode=True
     )
@@ -147,6 +153,7 @@ def main():
     api_key  = module.params['api_key']
     name     = module.params['name']
     ttl      = module.params['ttl']
+    force    = module.params['force']
     payload  = dict()
 
     # zone nickname length must be less than 250 chars
@@ -158,7 +165,7 @@ def main():
     if module.check_mode:
         check(state=state, api_key=api_key, name=name, payload=payload)
     else:
-        create_or_delete(state=state, api_key=api_key, name=name, ttl=ttl, payload=payload)
+        create_or_delete(state=state, api_key=api_key, name=name, ttl=ttl, force=force, payload=payload)
 
 from ansible.module_utils.basic import AnsibleModule
 
