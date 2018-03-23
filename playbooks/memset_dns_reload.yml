@@ -1,7 +1,13 @@
+---
 - hosts: localhost
   become: false
+  gather_facts: no
+
   tasks:
-    - name: Submit DNS reload request
-      local_action: memset_dns_reload
-        api_key=dcf089a2896940da9ffefb307ef49ccd
-        poll=true
+  - name: include secrets
+    include_vars: secrets.yaml
+
+  - name: Submit DNS reload request
+    local_action: memset_dns_reload
+      api_key="{{ api_key }}"
+      poll=true
