@@ -3,7 +3,7 @@
 
   tasks:
   - name: include secrets
-    include_vars: secrets.yaml
+    include_vars: ../secrets.yaml
 
   - name: Add or remove zone
     local_action:

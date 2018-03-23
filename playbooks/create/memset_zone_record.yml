@@ -5,7 +5,7 @@
 
   tasks:
   - name: include secrets
-    include_vars: secrets.yaml
+    include_vars: ../secrets.yaml
 
   - name: create DNS record
     local_action:
