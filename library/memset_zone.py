@@ -42,7 +42,7 @@ options:
     force:
         required: false
         description:
-            - Forces deletion of a zone and all zone domains/zone records it containsn.
+            - Forces deletion of a zone and all zone domains/zone records it contains.
 '''
 
 EXAMPLES = '''
