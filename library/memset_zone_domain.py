@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 from __future__ import (absolute_import, division, print_function)
+from ansible.module_utils.memset import check_zone
 from ansible.module_utils.memset import check_zone_domain
 from ansible.module_utils.memset import memset_api_call
 __metaclass__ = type
@@ -70,6 +71,9 @@ def create_or_delete_domain(**kwargs):
     msg = None
     payload = kwargs['payload']
 
+    api_method = 'dns.zone_list'
+    zone_exists = check_zone(api_key=kwargs['api_key'], api_method=api_method, name=kwargs['zone_name'], payload=kwargs['payload'])
+
     if kwargs['state'] == 'present':
         if kwargs['zone_name'] is None:
             msg = 'A zone is needed to add the domain to.'
@@ -97,9 +101,10 @@ def create_or_delete_domain(**kwargs):
             has_failed = True
             msg = 'Multiple zones with the same name exist.'
     if kwargs['state'] == 'absent':
-        api_method = 'dns.zone_domain_delete'
-        payload['domain'] = kwargs['domain']
-        has_changed, has_failed, msg, response = memset_api_call(api_key=kwargs['api_key'], api_method=api_method, payload=payload)
+        if zone_exists:
+            api_method = 'dns.zone_domain_delete'
+            payload['domain'] = kwargs['domain']
+            has_changed, has_failed, msg, response = memset_api_call(api_key=kwargs['api_key'], api_method=api_method, payload=payload)
 
     if has_failed:
         module.fail_json(failed=True, msg=msg)
