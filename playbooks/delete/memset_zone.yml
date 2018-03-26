@@ -10,4 +10,4 @@
       module: memset_zone
       api_key: "{{ api_key }}"
       state: absent
-      name: testymctestface.com
+      name: aaaaatest
