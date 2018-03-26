@@ -74,9 +74,9 @@ def check(**kwargs):
     zone_exists = check_zone(api_key=kwargs['api_key'], api_method=api_method, name=kwargs['name'], payload=kwargs['payload'])
 
     # set changed to true if the operation would cause a change    
-    changed = ( (zone_exists and kwargs['state'] == 'absent') or (not zone_exists and kwargs['state'] == 'present') )
+    has_changed = ( (zone_exists and kwargs['state'] == 'absent') or (not zone_exists and kwargs['state'] == 'present') )
 
-    module.exit_json(changed=changed)
+    module.exit_json(changed=has_changed)
 
 def create_or_delete(**kwargs):
     has_failed = False
@@ -118,23 +118,21 @@ def create_or_delete(**kwargs):
                         record_count = len(zone['records'])
                 if (domain_count > 0 or record_count > 0) and kwargs['force'] == False: 
                     msg = 'Zone contains domains or records and force was not used.'
-                    module.fail_json(failed=True, changed=False, msg=msg, rc=1)
+                    has_failed, has_changed = True, False
+                    module.fail_json(failed=has_failed, changed=has_changed, msg=msg, rc=1)
                 api_method = 'dns.zone_delete'
                 payload['id'] = zone_id
                 has_changed, has_failed, msg, response = memset_api_call(api_key=kwargs['api_key'], api_method=api_method, payload=payload)
             else:
-                has_failed = True
+                has_failed, has_changed = True, False
                 msg = 'Multiple zones with the same name exist.'
         else:
-            has_failed = False
-            
-    if has_failed:
-        module.fail_json(failed=True, msg=msg)
+            has_failed, has_changed = False, False
 
-    if has_changed:
-        module.exit_json(changed=True, msg=msg)
+    if has_failed:
+        module.fail_json(failed=has_failed, msg=msg)
     else:
-        module.exit_json(changed=False, msg=msg)
+        module.exit_json(changed=has_changed, msg=msg)
 
 def main():
     global module
@@ -158,9 +156,14 @@ def main():
 
     # zone nickname length must be less than 250 chars
     if len(name) > 250:
-        module.fail_json(failed=True, msg="Zone name must be less than 250 characters in length.")
+        has_failed = True
+        msg = "Zone name must be less than 250 characters in length"
     if ttl not in [ 0, 300, 600, 900, 1800, 3600, 7200, 10800, 21600, 43200, 86400 ]:
-        module.fail_json(failed=True, msg="TTL is not an accepted duration.")
+        has_failed = True
+        msg = "TTL is not an accepted duration"
+        
+    if has_failed:
+        module.fail_json
 
     if module.check_mode:
         check(state=state, api_key=api_key, name=name, payload=payload)
