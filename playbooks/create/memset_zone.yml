@@ -5,10 +5,10 @@
   - name: include secrets
     include_vars: ../secrets.yaml
 
-  - name: Add or remove zone
+  - name: add zone
     local_action:
       module: memset_zone
       api_key: "{{ api_key }}"
       state: present
-      name: aaaaatest
+      name: "{{ zone_domain }}"
       ttl: 300

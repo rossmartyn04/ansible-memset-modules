@@ -7,13 +7,13 @@
   - name: include secrets
     include_vars: ../secrets.yaml
 
-  - name: create DNS record
+  - name: delete DNS record
     local_action:
       module: memset_zone_record
       api_key: "{{ api_key }}"
       state: absent
-      zone: aaaatest
-      type: A
-      record: mail
-      data: 1.2.3.5
-      ttl: 300
+      zone: "{{ zone_domain }}"
+      type: "{{ item.type }}"
+      record: "{{ item.record }}"
+      data: "{{ item.data }}"
+    with_items: "{{ dns_records }}"

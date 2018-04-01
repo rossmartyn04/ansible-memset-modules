@@ -3,3 +3,4 @@ playbooks/test1.yml
 __pycache__
 *~
 secrets.yaml
+args.json

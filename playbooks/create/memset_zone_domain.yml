@@ -5,10 +5,10 @@
   - name: include secrets
     include_vars: ../secrets.yaml
 
-  - name: create zone domain
+  - name: add domain to zone
     local_action:
       module: memset_zone_domain
       api_key: "{{ api_key }}"
       state: present
-      domain: atesty.com
-      zone: aaaatest
+      domain: "{{ zone_domain }}"
+      zone: "{{ zone_domain }}"
