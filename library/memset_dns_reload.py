@@ -61,19 +61,19 @@ def main():
     payload = dict()
     api_method = 'dns.reload'
     
-    _, has_failed, msg, response = memset_api_call(api_key=api_key, api_method=api_method, payload=payload)
+    has_failed, msg, response = memset_api_call(api_key=api_key, api_method=api_method, payload=payload)
 
     if poll:
         payload['id'] = response.json()['id']
         api_method = 'job.status'
 
-        _, _, _, response = memset_api_call(api_key=api_key, api_method=api_method, payload=payload)
+        _, _, response = memset_api_call(api_key=api_key, api_method=api_method, payload=payload)
 
         while not response.json()['finished']:
             counter = 0
             while counter < 6:
                 sleep(5)
-                _, _, msg, response = memset_api_call(api_key=api_key, api_method=api_method, payload=payload)
+                _, msg, response = memset_api_call(api_key=api_key, api_method=api_method, payload=payload)
                 counter += 1
         if response.json()['error']:
             module.fail_json(failed=True, msg='Memset API returned job error')

@@ -35,7 +35,7 @@ def memset_api_call(api_key, api_method, **kwargs):
     del payload['api_key']
 
     msg = response.json()
-    return(has_changed, has_failed, msg, response)
+    return(has_failed, msg, response)
 
 def check_zone_domain(**kwargs):
     '''
@@ -44,7 +44,7 @@ def check_zone_domain(**kwargs):
     api_method = 'dns.zone_domain_list'
     payload = kwargs['payload']
 
-    _, has_failed, msg, response = memset_api_call(api_key=kwargs['api_key'], api_method=api_method, payload=payload)
+    has_failed, msg, response = memset_api_call(api_key=kwargs['api_key'], api_method=api_method, payload=payload)
 
     if response.status_code in [201, 200]:
         for zone_domain in response.json():
@@ -57,7 +57,7 @@ def check_zone(**kwargs):
     '''
     Returns true if zone already exists, and false if not.
     '''
-    _, has_failed, msg, response = memset_api_call(api_key=kwargs['api_key'], api_method=kwargs['api_method'])
+    has_failed, msg, response = memset_api_call(api_key=kwargs['api_key'], api_method=kwargs['api_method'])
 
     if response.status_code in [201, 200]:
         for zone in response.json():
@@ -71,7 +71,7 @@ def get_zone_id(opts):
     Returns the zone's id if it exists and is unique
     '''
     api_method = 'dns.zone_list'
-    _, has_failed, msg, response = memset_api_call(api_key=opts['api_key'], api_method=api_method)
+    has_failed, msg, response = memset_api_call(api_key=opts['api_key'], api_method=api_method)
 
     counter = 0
     failed = False
