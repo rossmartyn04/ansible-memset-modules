@@ -104,14 +104,14 @@ def create_or_delete(**kwargs):
 
     if zone_exists:
         # get a list of all zones and find the zone's ID
-        _, _, _, zone_response = memset_api_call(api_key=opts['api_key'], api_method=api_method)
+        _, _, zone_response = memset_api_call(api_key=opts['api_key'], api_method=api_method)
         for zone in zone_response.json():
             if zone['nickname'] == opts['zone']:
                 break
 
         # get a list of all records ( as we can't limit records by zone)
         api_method = 'dns.zone_record_list'
-        _, _, _, record_response = memset_api_call(api_key=opts['api_key'], api_method=api_method)
+        _, _, record_response = memset_api_call(api_key=opts['api_key'], api_method=api_method)
 
         # find any matching records
         records = [record for record in record_response.json() if record['zone_id'] == zone['id'] and record['record'] == opts['record'] and record['type'] == opts['type']]
@@ -142,7 +142,9 @@ def create_or_delete(**kwargs):
                         if opts['check_mode']:
                             has_changed = True
                             return(has_changed, has_failed, msg, response)
-                        has_changed, has_failed, msg, response = memset_api_call(api_key=opts['api_key'], api_method=api_method, payload=payload)
+                        has_failed, msg, response = memset_api_call(api_key=opts['api_key'], api_method=api_method, payload=payload)
+                        if not has_failed:
+                            has_changed = True
             else:
                 # no record found, so we need to create it
                 api_method = 'dns.zone_record_create'
@@ -150,7 +152,9 @@ def create_or_delete(**kwargs):
                 if opts['check_mode']:
                     has_changed = True
                     return(has_changed, has_failed, msg, response)
-                has_changed, has_failed, msg, response = memset_api_call(api_key=opts['api_key'], api_method=api_method, payload=payload)
+                has_failed, msg, response = memset_api_call(api_key=opts['api_key'], api_method=api_method, payload=payload)
+                if not has_failed:
+                    has_changed = True
 
         if opts['state'] == 'absent':
             # if we have any matches, delete them
@@ -161,7 +165,9 @@ def create_or_delete(**kwargs):
                         return(has_changed, has_failed, msg, response)
                     payload['id'] = zone_record['id']
                     api_method = 'dns.zone_record_delete'
-                    has_changed, has_failed, msg, response = memset_api_call(api_key=opts['api_key'], api_method=api_method, payload=payload)
+                    has_failed, msg, response = memset_api_call(api_key=opts['api_key'], api_method=api_method, payload=payload)
+                    if not has_failed:
+                        has_changed = True
     else:
         if opts['state'] == 'present':
             has_failed = True

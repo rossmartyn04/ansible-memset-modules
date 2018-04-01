@@ -2,7 +2,9 @@
 
 from __future__ import (absolute_import, division, print_function)
 from ansible.module_utils.memset import check_zone
+#from module_utils.memset import check_zone
 from ansible.module_utils.memset import memset_api_call
+# from module_utils.memset import memset_api_call
 __metaclass__ = type
 
 ANSIBLE_METADATA = {
@@ -92,9 +94,11 @@ def create_or_delete(**kwargs):
             api_method = 'dns.zone_create'
             payload['ttl'] = kwargs['ttl']
             payload['nickname'] = kwargs['name']
-            has_changed, has_failed, msg, response = memset_api_call(api_key=kwargs['api_key'], api_method=api_method, payload=payload)
+            has_failed, msg, response = memset_api_call(api_key=kwargs['api_key'], api_method=api_method, payload=payload)
+            if not has_failed:
+                has_changed = True
         else:
-            _, _, _, response = memset_api_call(api_key=kwargs['api_key'], api_method=api_method, payload=payload)
+            _, _, response = memset_api_call(api_key=kwargs['api_key'], api_method=api_method, payload=payload)
             for zone in response.json():
                 if zone['nickname'] == kwargs['name']:
                     break
@@ -102,10 +106,12 @@ def create_or_delete(**kwargs):
                 payload['id'] = zone['id']
                 payload['ttl'] = kwargs['ttl']
                 api_method = 'dns.zone_update'
-                has_changed, has_failed, msg, response = memset_api_call(api_key=kwargs['api_key'], api_method=api_method, payload=payload)
+                has_failed, msg, response = memset_api_call(api_key=kwargs['api_key'], api_method=api_method, payload=payload)
+                if not has_failed:
+                    has_changed = True
     if kwargs['state'] == 'absent':
         if zone_exists:
-            _, _, _, response = memset_api_call(api_key=kwargs['api_key'], api_method=api_method, payload=payload)
+            _, _, response = memset_api_call(api_key=kwargs['api_key'], api_method=api_method, payload=payload)
             counter = 0
             for zone in response.json():
                 if zone['nickname'] == kwargs['name']:
@@ -122,7 +128,9 @@ def create_or_delete(**kwargs):
                     module.fail_json(failed=has_failed, changed=has_changed, msg=msg, rc=1)
                 api_method = 'dns.zone_delete'
                 payload['id'] = zone_id
-                has_changed, has_failed, msg, response = memset_api_call(api_key=kwargs['api_key'], api_method=api_method, payload=payload)
+                has_failed, msg, response = memset_api_call(api_key=kwargs['api_key'], api_method=api_method, payload=payload)
+                if not has_failed:
+                    has_changed = True
             else:
                 has_failed, has_changed = True, False
                 msg = 'Multiple zones with the same name exist.'
@@ -154,16 +162,18 @@ def main():
     force    = module.params['force']
     payload  = dict()
 
+    has_failed = False
+
     # zone nickname length must be less than 250 chars
     if len(name) > 250:
         has_failed = True
-        msg = "Zone name must be less than 250 characters in length"
+        msg = "Zone name must be less than 250 characters in length."
     if ttl not in [ 0, 300, 600, 900, 1800, 3600, 7200, 10800, 21600, 43200, 86400 ]:
         has_failed = True
         msg = "TTL is not an accepted duration"
         
     if has_failed:
-        module.fail_json
+        module.fail_json(failed=has_failed, msg=msg)
 
     if module.check_mode:
         check(state=state, api_key=api_key, name=name, payload=payload)

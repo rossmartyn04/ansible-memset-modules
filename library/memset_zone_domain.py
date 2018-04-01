@@ -79,7 +79,7 @@ def create_or_delete_domain(**kwargs):
             msg = 'A zone is needed to add the domain to.'
             module.fail_json(failed=True, msg=msg)
         api_method = 'dns.zone_list'
-        _, _, _, response = memset_api_call(api_key=kwargs['api_key'], api_method=api_method, payload=payload)
+        _, _, response = memset_api_call(api_key=kwargs['api_key'], api_method=api_method, payload=payload)
         counter = 0
         for zone in response.json():
             if zone['nickname'] == kwargs['zone_name']:
@@ -87,7 +87,7 @@ def create_or_delete_domain(**kwargs):
                 counter += 1
         if counter == 1:
             api_method = 'dns.zone_domain_list'
-            _, _, _, response = memset_api_call(api_key=kwargs['api_key'], api_method=api_method, payload=payload)
+            _, _, response = memset_api_call(api_key=kwargs['api_key'], api_method=api_method, payload=payload)
             for zone_domain in response.json():
                 if zone_domain['domain'] == kwargs['domain']:
                     has_changed = False
@@ -96,7 +96,9 @@ def create_or_delete_domain(**kwargs):
                 api_method = 'dns.zone_domain_create'
                 payload['domain'] = kwargs['domain']
                 payload['zone_id'] = zone_id
-                has_changed, has_failed, msg, response = memset_api_call(api_key=kwargs['api_key'], api_method=api_method, payload=payload)
+                has_failed, msg, response = memset_api_call(api_key=kwargs['api_key'], api_method=api_method, payload=payload)
+                if not has_failed:
+                    has_changed = True
         else:
             has_failed = True
             msg = 'Multiple zones with the same name exist.'
@@ -104,7 +106,9 @@ def create_or_delete_domain(**kwargs):
         if zone_exists:
             api_method = 'dns.zone_domain_delete'
             payload['domain'] = kwargs['domain']
-            has_changed, has_failed, msg, response = memset_api_call(api_key=kwargs['api_key'], api_method=api_method, payload=payload)
+            has_failed, msg, response = memset_api_call(api_key=kwargs['api_key'], api_method=api_method, payload=payload)
+            if not has_failed:
+                has_changed = True
 
     if has_failed:
         module.fail_json(failed=True, msg=msg)
