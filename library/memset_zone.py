@@ -2,9 +2,7 @@
 
 from __future__ import (absolute_import, division, print_function)
 from ansible.module_utils.memset import check_zone
-#from module_utils.memset import check_zone
 from ansible.module_utils.memset import memset_api_call
-# from module_utils.memset import memset_api_call
 __metaclass__ = type
 
 ANSIBLE_METADATA = {
