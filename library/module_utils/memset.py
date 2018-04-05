@@ -18,9 +18,8 @@ def memset_api_call(api_key, api_method, **kwargs):
         payload = kwargs['payload']
     payload['api_key'] = api_key
     # set some sane defaults
-    has_changed = False
     has_failed = False
-    response = None
+    response, msg = None, None
     api_uri_base = 'https://api.memset.com/v1/json/'
     api_uri = '{}{}/' . format(api_uri_base, api_method)
 
@@ -32,14 +31,21 @@ def memset_api_call(api_key, api_method, **kwargs):
         has_failed = True
         msg = e
     else:
-        has_changed = response.status_code in [201, 200]
-
-    if response.status_code in [400, 403, 404]:
-        has_failed = True
+        if response.status_code in [400, 403, 404, 412]:
+            # the human made an error
+            has_failed = True
+        elif response.status_code in [500, 503]:
+            # Memset's API isn't happy
+            has_failed = True
+            msg = "Internal server error"
+        elif response.status_code in [201, 200]:
+            pass
 
     del payload['api_key']
 
-    msg = response.json()
+    if msg is None:
+        msg = response.json()
+
     return(has_failed, msg, response)
 
 def check_zone_domain(**kwargs):
