@@ -5,6 +5,9 @@ import requests
 def memset_api_call(api_key, api_method, **kwargs):
     '''
     Generic function which returns results back to calling function.
+
+    Requires an API key and an API method to assemble the API URL.
+    Returns response text to be analysed.
     '''
     # if we've already started preloading the payload then use that
     try:
@@ -21,6 +24,8 @@ def memset_api_call(api_key, api_method, **kwargs):
     api_uri_base = 'https://api.memset.com/v1/json/'
     api_uri = '{}{}/' . format(api_uri_base, api_method)
 
+    # make the request and capture any error to be returned
+    # in the correct Ansible way.
     try:
         response = requests.post(api_uri, data=payload)
     except Exception as e:
