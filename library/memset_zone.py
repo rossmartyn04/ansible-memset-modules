@@ -83,6 +83,7 @@ def create_or_delete(args):
     has_changed = False
     msg = ''
     api_method = 'dns.zone_list'
+    payload = args['payload']
 
     zone_exists = check_zone(api_key=args['api_key'], api_method=api_method, name=args['name'], payload=args['payload'])
 
