@@ -68,7 +68,7 @@ EXAMPLES = '''
 RETURN = ''' # '''
 
 def check(args):
-    changed = False
+    has_changed = False
     api_method = 'dns.zone_list'
 
     zone_exists = check_zone(api_key=args['api_key'], api_method=api_method, name=args['name'], payload=args['payload'])
@@ -162,10 +162,10 @@ def main(args=dict()):
     has_failed = False
 
     # zone nickname length must be less than 250 chars
-    if len(name) > 250:
+    if len(args['name']) > 250:
         has_failed = True
         msg = "Zone name must be less than 250 characters in length."
-    if ttl not in [ 0, 300, 600, 900, 1800, 3600, 7200, 10800, 21600, 43200, 86400 ]:
+    if args['ttl'] not in [ 0, 300, 600, 900, 1800, 3600, 7200, 10800, 21600, 43200, 86400 ]:
         has_failed = True
         msg = "TTL is not an accepted duration"
         
