@@ -91,41 +91,40 @@ EXAMPLES = '''
 
 RETURN = ''' # '''
 
-def create_or_delete(**kwargs):
+def create_or_delete(args):
     has_failed = False
     has_changed = False
     msg = ''
     response = ''
-    opts = kwargs['opts']
-    payload = opts['payload']
+    payload = args['payload']
     api_method = 'dns.zone_list'
 
-    zone_exists = check_zone(api_key=opts['api_key'], api_method=api_method, name=opts['zone'])
+    zone_exists = check_zone(api_key=args['api_key'], api_method=api_method, name=args['zone'])
 
     if zone_exists:
         # get a list of all zones and find the zone's ID
-        _, _, zone_response = memset_api_call(api_key=opts['api_key'], api_method=api_method)
+        _, _, zone_response = memset_api_call(api_key=args['api_key'], api_method=api_method)
         for zone in zone_response.json():
-            if zone['nickname'] == opts['zone']:
+            if zone['nickname'] == args['zone']:
                 break
 
         # get a list of all records ( as we can't limit records by zone)
         api_method = 'dns.zone_record_list'
-        _, _, record_response = memset_api_call(api_key=opts['api_key'], api_method=api_method)
+        _, _, record_response = memset_api_call(api_key=args['api_key'], api_method=api_method)
 
         # find any matching records
-        records = [record for record in record_response.json() if record['zone_id'] == zone['id'] and record['record'] == opts['record'] and record['type'] == opts['type']]
+        records = [record for record in record_response.json() if record['zone_id'] == zone['id'] and record['record'] == args['record'] and record['type'] == args['type']]
 
-        if opts['state'] == 'present':
+        if args['state'] == 'present':
             # assemble the new record
             new_record = dict()
             new_record['zone_id'] = zone['id']
-            new_record['priority'] = opts['priority']
-            new_record['address'] = opts['address']
-            new_record['relative'] = opts['relative']
-            new_record['record'] = opts['record']
-            new_record['ttl'] = opts['ttl']
-            new_record['type'] = opts['type']
+            new_record['priority'] = args['priority']
+            new_record['address'] = args['address']
+            new_record['relative'] = args['relative']
+            new_record['record'] = args['record']
+            new_record['ttl'] = args['ttl']
+            new_record['type'] = args['type']
 
             # if we have any matches, update them
             if records:
@@ -139,62 +138,62 @@ def create_or_delete(**kwargs):
                         payload = zone_record.copy()
                         payload.update(new_record)
                         api_method = 'dns.zone_record_update'
-                        if opts['check_mode']:
+                        if args['check_mode']:
                             has_changed = True
                             return(has_changed, has_failed, msg, response)
-                        has_failed, msg, response = memset_api_call(api_key=opts['api_key'], api_method=api_method, payload=payload)
+                        has_failed, msg, response = memset_api_call(api_key=args['api_key'], api_method=api_method, payload=payload)
                         if not has_failed:
                             has_changed = True
             else:
                 # no record found, so we need to create it
                 api_method = 'dns.zone_record_create'
                 payload = new_record
-                if opts['check_mode']:
+                if args['check_mode']:
                     has_changed = True
                     return(has_changed, has_failed, msg, response)
-                has_failed, msg, response = memset_api_call(api_key=opts['api_key'], api_method=api_method, payload=payload)
+                has_failed, msg, response = memset_api_call(api_key=args['api_key'], api_method=api_method, payload=payload)
                 if not has_failed:
                     has_changed = True
 
-        if opts['state'] == 'absent':
+        if args['state'] == 'absent':
             # if we have any matches, delete them
             if records:
                 for zone_record in records:
-                    if opts['check_mode']:
+                    if args['check_mode']:
                         has_changed = True
                         return(has_changed, has_failed, msg, response)
                     payload['id'] = zone_record['id']
                     api_method = 'dns.zone_record_delete'
-                    has_failed, msg, response = memset_api_call(api_key=opts['api_key'], api_method=api_method, payload=payload)
+                    has_failed, msg, response = memset_api_call(api_key=args['api_key'], api_method=api_method, payload=payload)
                     if not has_failed:
                         has_changed = True
     else:
-        if opts['state'] == 'present':
+        if args['state'] == 'present':
             has_failed = True
             msg = 'Zone must exist before records are created'
-        if opts['state'] == 'absent':
+        if args['state'] == 'absent':
             has_changed = False
 
     return(has_changed, has_failed, msg, response)
 
-def main():
+
+def main(args=dict()):
     global module
     module = AnsibleModule(
         argument_spec = dict(
-            state       = dict(required=True, choices=[ 'present', 'absent' ], type='str'),
-            api_key     = dict(required=True, type='str', no_log=True),
-            zone        = dict(required=True, type='str'),
-            type        = dict(required=True, aliases=['type'], choices=[ 'A', 'AAAA', 'CNAME', 'MX', 'NS', 'SRV', 'TXT' ], type='str'),
-            data        = dict(required=True, aliases=['ip'], type='str'),
-            record      = dict(required=False, default='', type='str'),
-            ttl         = dict(required=False, default=0, choices=[ 0, 300, 600, 900, 1800, 3600, 7200, 10800, 21600, 43200, 86400 ], type='int'),
-            priority    = dict(required=False, default=0, type='int'),
-            relative    = dict(required=False, default=False, type='bool')
+            state    = dict(required=True, choices=[ 'present', 'absent' ], type='str'),
+            api_key  = dict(required=True, type='str', no_log=True),
+            zone     = dict(required=True, type='str'),
+            type     = dict(required=True, aliases=['type'], choices=[ 'A', 'AAAA', 'CNAME', 'MX', 'NS', 'SRV', 'TXT' ], type='str'),
+            data     = dict(required=True, aliases=['ip'], type='str'),
+            record   = dict(required=False, default='', type='str'),
+            ttl      = dict(required=False, default=0, choices=[ 0, 300, 600, 900, 1800, 3600, 7200, 10800, 21600, 43200, 86400 ], type='int'),
+            priority = dict(required=False, default=0, type='int'),
+            relative = dict(required=False, default=False, type='bool')
         ),
         supports_check_mode=True
     )
 
-    args = dict()
     args['payload']     = dict()
     args['state']       = module.params['state']
     args['api_key']     = module.params['api_key']
@@ -213,7 +212,7 @@ def main():
         if not 0 <= args['priority'] <= 999:
             module.fail_json(failed=True, msg='Priority must be in the range 0 > 999 (inclusive).')
 
-    has_changed, has_failed, msg, response = create_or_delete(opts=args)
+    has_changed, has_failed, msg, response = create_or_delete(args)
 
     if has_failed:
         module.fail_json(failed=has_failed, msg=msg)
