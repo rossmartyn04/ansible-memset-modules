@@ -204,9 +204,7 @@ def main(args=dict()):
     args['relative']    = module.params['relative']
     args['ttl']         = module.params['ttl']
     args['check_mode']  = module.check_mode
-    # if args['type'] in [ 'A', 'AAAA' ]:
-    #     if not ipaddress.ip_address(args['address']):
-    #         module.fail_json(failed=True, msg='IP address is not valid.')
+
     if args['priority']:
         if not 0 <= args['priority'] <= 999:
             module.fail_json(failed=True, msg='Priority must be in the range 0 > 999 (inclusive).')
