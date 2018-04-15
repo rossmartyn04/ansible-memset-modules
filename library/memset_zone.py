@@ -67,66 +67,64 @@ EXAMPLES = '''
 
 RETURN = ''' # '''
 
-def check(**kwargs):
-    changed = False
-    api_method = 'dns.zone_list'
+def check(args):
+    has_changed = False
 
-    zone_exists = check_zone(api_key=kwargs['api_key'], api_method=api_method, name=kwargs['name'], payload=kwargs['payload'])
+    zone_exists = check_zone(api_key=args['api_key'], name=args['zone_name'])
 
     # set changed to true if the operation would cause a change    
-    has_changed = ( (zone_exists and kwargs['state'] == 'absent') or (not zone_exists and kwargs['state'] == 'present') )
+    has_changed = ( (zone_exists and args['state'] == 'absent') or (not zone_exists and args['state'] == 'present') )
 
     module.exit_json(changed=has_changed)
 
-def create_or_delete(**kwargs):
+def create_or_delete(args):
     has_failed = False
     has_changed = False
     msg = ''
-    payload = kwargs['payload']
-    api_method = 'dns.zone_list'
+    payload = args['payload']
 
-    zone_exists = check_zone(api_key=kwargs['api_key'], api_method=api_method, name=kwargs['name'], payload=kwargs['payload'])
+    zone_exists = check_zone(api_key=args['api_key'], name=args['zone_name'])
 
-    if kwargs['state'] == 'present':
+    if args['state'] == 'present':
         if not zone_exists:
             api_method = 'dns.zone_create'
-            payload['ttl'] = kwargs['ttl']
-            payload['nickname'] = kwargs['name']
-            has_failed, msg, response = memset_api_call(api_key=kwargs['api_key'], api_method=api_method, payload=payload)
+            payload['ttl'] = args['ttl']
+            payload['nickname'] = args['name']
+            has_failed, msg, response = memset_api_call(api_key=args['api_key'], api_method=api_method, payload=payload)
             if not has_failed:
                 has_changed = True
         else:
-            _, _, response = memset_api_call(api_key=kwargs['api_key'], api_method=api_method, payload=payload)
+            _, _, response = memset_api_call(api_key=args['api_key'], api_method=api_method, payload=payload)
             for zone in response.json():
-                if zone['nickname'] == kwargs['name']:
+                if zone['nickname'] == args['name']:
                     break
-            if zone['ttl'] != kwargs['ttl']:
+            if zone['ttl'] != args['ttl']:
                 payload['id'] = zone['id']
-                payload['ttl'] = kwargs['ttl']
+                payload['ttl'] = args['ttl']
                 api_method = 'dns.zone_update'
-                has_failed, msg, response = memset_api_call(api_key=kwargs['api_key'], api_method=api_method, payload=payload)
+                has_failed, msg, response = memset_api_call(api_key=args['api_key'], api_method=api_method, payload=payload)
                 if not has_failed:
                     has_changed = True
-    if kwargs['state'] == 'absent':
+    if args['state'] == 'absent':
         if zone_exists:
-            _, _, response = memset_api_call(api_key=kwargs['api_key'], api_method=api_method, payload=payload)
+            _, _, response = memset_api_call(api_key=args['api_key'], api_method=api_method, payload=payload)
             counter = 0
             for zone in response.json():
-                if zone['nickname'] == kwargs['name']:
+                if zone['nickname'] == args['name']:
                     counter += 1
             if counter == 1:
                 for zone in response.json():
-                    if zone['nickname'] == kwargs['name']:
+                    if zone['nickname'] == args['name']:
                         zone_id = zone['id']
                         domain_count = len(zone['domains'])
                         record_count = len(zone['records'])
-                if (domain_count > 0 or record_count > 0) and kwargs['force'] == False: 
+                if (domain_count > 0 or record_count > 0) and args['force'] == False:
                     msg = 'Zone contains domains or records and force was not used.'
                     has_failed, has_changed = True, False
                     module.fail_json(failed=has_failed, changed=has_changed, msg=msg, rc=1)
                 api_method = 'dns.zone_delete'
                 payload['id'] = zone_id
-                has_failed, msg, response = memset_api_call(api_key=kwargs['api_key'], api_method=api_method, payload=payload)
+                has_failed, msg, response = memset_api_call(api_key=args['api_key'], api_method=api_method, payload=payload)
                 if not has_failed:
                     has_changed = True
             else:
@@ -140,7 +138,7 @@ def create_or_delete(**kwargs):
     else:
         module.exit_json(changed=has_changed, msg=msg)
 
-def main():
+def main(args=dict()):
     global module
     module = AnsibleModule(
         argument_spec = dict(
@@ -153,20 +151,20 @@ def main():
         supports_check_mode=True
     )
 
-    state    = module.params['state']
-    api_key  = module.params['api_key']
-    name     = module.params['name']
-    ttl      = module.params['ttl']
-    force    = module.params['force']
-    payload  = dict()
+    args['state']   = module.params['state']
+    args['api_key'] = module.params['api_key']
+    args['name']    = module.params['name']
+    args['ttl']     = module.params['ttl']
+    args['force']   = module.params['force']
+    args['payload'] = dict()
 
     has_failed = False
 
     # zone nickname length must be less than 250 chars
-    if len(name) > 250:
+    if len(args['name']) > 250:
         has_failed = True
         msg = "Zone name must be less than 250 characters in length."
-    if ttl not in [ 0, 300, 600, 900, 1800, 3600, 7200, 10800, 21600, 43200, 86400 ]:
+    if args['ttl'] not in [ 0, 300, 600, 900, 1800, 3600, 7200, 10800, 21600, 43200, 86400 ]:
         has_failed = True
         msg = "TTL is not an accepted duration"
         
@@ -174,9 +172,9 @@ def main():
         module.fail_json(failed=has_failed, msg=msg)
 
     if module.check_mode:
-        check(state=state, api_key=api_key, name=name, payload=payload)
+        check(args)
     else:
-        create_or_delete(state=state, api_key=api_key, name=name, ttl=ttl, force=force, payload=payload)
+        create_or_delete(args)
 
 from ansible.module_utils.basic import AnsibleModule
 

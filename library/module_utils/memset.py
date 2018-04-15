@@ -2,7 +2,7 @@
 
 import requests
 
-def memset_api_call(api_key, api_method, **kwargs):
+def memset_api_call(api_key, api_method, payload=None):
     '''
     Generic function which returns results back to calling function.
 
@@ -10,12 +10,9 @@ def memset_api_call(api_key, api_method, **kwargs):
     Returns response text to be analysed.
     '''
     # if we've already started preloading the payload then use that
-    try:
-        kwargs['payload']
-    except KeyError:
+    if payload is None:
         payload = dict()
-    else:
-        payload = kwargs['payload']
+
     payload['api_key'] = api_key
     # set some sane defaults
     has_failed = False
@@ -48,31 +45,32 @@ def memset_api_call(api_key, api_method, **kwargs):
 
     return(has_failed, msg, response)
 
-def check_zone_domain(**kwargs):
+def check_zone_domain(api_key, payload, domain):
     '''
     Returns true if domain already exists, and false if not.
     '''
     api_method = 'dns.zone_domain_list'
-    payload = kwargs['payload']
 
-    has_failed, msg, response = memset_api_call(api_key=kwargs['api_key'], api_method=api_method, payload=payload)
+    has_failed, msg, response = memset_api_call(api_key=api_key, api_method=api_method, payload=payload)
 
     if response.status_code in [201, 200]:
         for zone_domain in response.json():
-            if zone_domain['domain'] == kwargs['domain']:
+            if zone_domain['domain'] == domain:
                 return True
         else:
             return False
 
-def check_zone(**kwargs):
+def check_zone(api_key, name, payload):
     '''
     Returns true if zone already exists, and false if not.
     '''
-    has_failed, msg, response = memset_api_call(api_key=kwargs['api_key'], api_method=kwargs['api_method'])
+    api_method = 'dns.zone_list'
+
+    has_failed, msg, response = memset_api_call(api_key=api_key, api_method=api_method)
 
     if response.status_code in [201, 200]:
         for zone in response.json():
-            if zone['nickname'] == kwargs['name']:
+            if zone['nickname'] == name:
                 return True
         else:
             return False

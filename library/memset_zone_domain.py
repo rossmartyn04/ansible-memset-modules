@@ -54,59 +54,57 @@ EXAMPLES = '''
 
 RETURN = ''' # '''
 
-def check(**kwargs):
+def check(args):
     changed = False
-    api_method = 'dns.zone_domain_list'
 
-    zone_exists = check_zone_domain(api_key=kwargs['api_key'], api_method=api_method, payload=kwargs['payload'], domain=kwargs['domain'])
+    zone_exists = check_zone_domain(api_key=args['api_key'], payload=args['payload'], domain=args['domain'])
 
     # set changed to true if the operation would cause a change    
-    changed = ( (zone_exists and kwargs['state'] == 'absent') or (not zone_exists and kwargs['state'] == 'present') )
+    changed = ( (zone_exists and args['state'] == 'absent') or (not zone_exists and args['state'] == 'present') )
 
     module.exit_json(changed=changed)
 
-def create_or_delete_domain(**kwargs):
+def create_or_delete_domain(args):
     has_changed = False
     has_failed = False
     msg = None
-    payload = kwargs['payload']
+    payload = args['payload']
 
-    api_method = 'dns.zone_list'
-    zone_exists = check_zone(api_key=kwargs['api_key'], api_method=api_method, name=kwargs['zone_name'], payload=kwargs['payload'])
+    zone_exists = check_zone(api_key=args['api_key'], name=args['zone_name'])
 
-    if kwargs['state'] == 'present':
-        if kwargs['zone_name'] is None:
+    if args['state'] == 'present':
+        if args['zone_name'] is None:
             msg = 'A zone is needed to add the domain to.'
             module.fail_json(failed=True, msg=msg)
         api_method = 'dns.zone_list'
-        _, _, response = memset_api_call(api_key=kwargs['api_key'], api_method=api_method, payload=payload)
+        _, _, response = memset_api_call(api_key=args['api_key'], api_method=api_method, payload=payload)
         counter = 0
         for zone in response.json():
-            if zone['nickname'] == kwargs['zone_name']:
+            if zone['nickname'] == args['zone_name']:
                 zone_id = zone['id']
                 counter += 1
         if counter == 1:
             api_method = 'dns.zone_domain_list'
-            _, _, response = memset_api_call(api_key=kwargs['api_key'], api_method=api_method, payload=payload)
+            _, _, response = memset_api_call(api_key=args['api_key'], api_method=api_method, payload=payload)
             for zone_domain in response.json():
-                if zone_domain['domain'] == kwargs['domain']:
+                if zone_domain['domain'] == args['domain']:
                     has_changed = False
                     break
             else:
                 api_method = 'dns.zone_domain_create'
-                payload['domain'] = kwargs['domain']
+                payload['domain'] = args['domain']
                 payload['zone_id'] = zone_id
-                has_failed, msg, response = memset_api_call(api_key=kwargs['api_key'], api_method=api_method, payload=payload)
+                has_failed, msg, response = memset_api_call(api_key=args['api_key'], api_method=api_method, payload=payload)
                 if not has_failed:
                     has_changed = True
         else:
             has_failed = True
             msg = 'Multiple zones with the same name exist.'
-    if kwargs['state'] == 'absent':
+    if args['state'] == 'absent':
         if zone_exists:
             api_method = 'dns.zone_domain_delete'
-            payload['domain'] = kwargs['domain']
-            has_failed, msg, response = memset_api_call(api_key=kwargs['api_key'], api_method=api_method, payload=payload)
+            payload['domain'] = args['domain']
+            has_failed, msg, response = memset_api_call(api_key=args['api_key'], api_method=api_method, payload=payload)
             if not has_failed:
                 has_changed = True
 
@@ -130,26 +128,21 @@ def main():
         supports_check_mode=True
     )
     
-    payload   = dict()
-    state     = module.params['state']
-    api_key   = module.params['api_key']
-    domain    = module.params['domain']
-    zone_name = module.params['zone_name']
-    # try:
-    #     module.params['zone']
-    # except NameError:
-    #     zone_name = None
-    # else:
-    #     zone_name = module.params['zone']
+    args = dict()
+    args['payload']   = dict()
+    args['state']     = module.params['state']
+    args['api_key']   = module.params['api_key']
+    args['domain']    = module.params['domain']
+    args['zone_name'] = module.params['zone_name']
     
     # zone domain length must be less than 250 chars
-    if len(domain) > 250:
+    if len(args['domain']) > 250:
         module.fail_json(failed=True, msg="Zone domain must be less than 250 characters in length.")
 
     if module.check_mode:
-        check(state=state, api_key=api_key, domain=domain, payload=payload)
+        check(args)
     else:
-        create_or_delete_domain(state=state, api_key=api_key, domain=domain, zone_name=zone_name, payload=payload)
+        create_or_delete_domain(args)
 
 from ansible.module_utils.basic import AnsibleModule
 
