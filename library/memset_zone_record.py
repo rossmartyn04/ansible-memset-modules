@@ -102,7 +102,7 @@ def create_or_delete(args):
     api_method = 'dns.zone_list'
     _, _, response = memset_api_call(api_key=args['api_key'], api_method=api_method)
 
-    zone_exists = check_zone(data=response, name=args['zone_name'])
+    zone_exists = check_zone(data=response, name=args['zone'])
 
     if zone_exists:
         # get a list of all zones and find the zone's ID
