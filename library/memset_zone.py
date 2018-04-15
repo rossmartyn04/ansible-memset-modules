@@ -70,7 +70,11 @@ RETURN = ''' # '''
 def check(args):
     has_changed = False
 
-    zone_exists = check_zone(api_key=args['api_key'], name=args['zone_name'])
+    # get the zones and check if the relevant zone exists
+    api_method = 'dns.zone_list'
+    _, _, response = memset_api_call(api_key=api_key, api_method=api_method)
+
+    zone_exists = check_zone(data=response, name=args['zone_name'])
 
     # set changed to true if the operation would cause a change    
     has_changed = ( (zone_exists and args['state'] == 'absent') or (not zone_exists and args['state'] == 'present') )
@@ -83,7 +87,11 @@ def create_or_delete(args):
     msg = ''
     payload = args['payload']
 
-    zone_exists = check_zone(api_key=args['api_key'], name=args['zone_name'])
+    # get the zones and check if the relevant zone exists
+    api_method = 'dns.zone_list'
+    _, _, response = memset_api_call(api_key=api_key, api_method=api_method)
+
+    zone_exists = check_zone(data=response, name=args['zone_name'])
 
     if args['state'] == 'present':
         if not zone_exists:
