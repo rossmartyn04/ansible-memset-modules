@@ -9,9 +9,12 @@ def memset_api_call(api_key, api_method, payload=None):
     Requires an API key and an API method to assemble the API URL.
     Returns response text to be analysed.
     '''
-    # if we've already started preloading the payload then use that
+    # if we've already started preloading the payload then copy it
+    # and use that, otherwise we need to isntantiate it.
     if payload is None:
         payload = dict()
+    else:
+        payload = payload.copy()
 
     payload['api_key'] = api_key
     # set some sane defaults
