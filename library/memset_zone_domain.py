@@ -59,7 +59,7 @@ def check(args):
 
     api_method = 'dns.zone_domain_list'
 
-    _, _, response = memset_api_call(api_key=args'[api_key]', api_method=api_method, payload='[payload]')
+    _, _, response = memset_api_call(api_key=args['api_key'], api_method=api_method, payload=['payload'])
 
     zone_exists = check_zone_domain(data=response, domain=args['domain'])
 
