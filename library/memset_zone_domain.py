@@ -57,7 +57,11 @@ RETURN = ''' # '''
 def check(args):
     changed = False
 
-    zone_exists = check_zone_domain(api_key=args['api_key'], payload=args['payload'], domain=args['domain'])
+    api_method = 'dns.zone_domain_list'
+
+    _, _, response = memset_api_call(api_key=args'[api_key]', api_method=api_method, payload='[payload]')
+
+    zone_exists = check_zone_domain(data=response, domain=args['domain'])
 
     # set changed to true if the operation would cause a change    
     changed = ( (zone_exists and args['state'] == 'absent') or (not zone_exists and args['state'] == 'present') )

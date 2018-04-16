@@ -45,16 +45,12 @@ def memset_api_call(api_key, api_method, payload=None):
 
     return(has_failed, msg, response)
 
-def check_zone_domain(api_key, payload, domain):
+def check_zone_domain(data, domain):
     '''
     Returns true if domain already exists, and false if not.
     '''
-    api_method = 'dns.zone_domain_list'
-
-    has_failed, msg, response = memset_api_call(api_key=api_key, api_method=api_method, payload=payload)
-
-    if response.status_code in [201, 200]:
-        for zone_domain in response.json():
+    if data.status_code in [201, 200]:
+        for zone_domain in data.json():
             if zone_domain['domain'] == domain:
                 return True
         else:
