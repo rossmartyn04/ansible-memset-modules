@@ -68,8 +68,6 @@ EXAMPLES = '''
 RETURN = ''' # '''
 
 def check(args):
-    has_changed = False
-
     # get the zones and check if the relevant zone exists
     api_method = 'dns.zone_list'
     _, _, response = memset_api_call(api_key=args['api_key'], api_method=api_method)

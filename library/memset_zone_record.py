@@ -95,7 +95,6 @@ def create_or_delete(args):
     has_failed = False
     has_changed = False
     msg = ''
-    response = ''
     payload = args['payload']
 
     # get the zones and check if the relevant zone exists
