@@ -55,8 +55,6 @@ EXAMPLES = '''
 RETURN = ''' # '''
 
 def check(args):
-    changed = False
-
     api_method = 'dns.zone_domain_list'
 
     _, _, response = memset_api_call(api_key=args['api_key'], api_method=api_method, payload=['payload'])
@@ -64,9 +62,9 @@ def check(args):
     zone_exists = check_zone_domain(data=response, domain=args['domain'])
 
     # set changed to true if the operation would cause a change    
-    changed = ( (zone_exists and args['state'] == 'absent') or (not zone_exists and args['state'] == 'present') )
+    has_changed = ( (zone_exists and args['state'] == 'absent') or (not zone_exists and args['state'] == 'present') )
 
-    module.exit_json(changed=changed)
+    module.exit_json(changed=has_changed)
 
 def create_or_delete_domain(args):
     has_changed = False
