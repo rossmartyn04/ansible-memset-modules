@@ -20,7 +20,7 @@ version_added: "2.3"
 short_description: Manage zone domains
 notes:
   - Zone domains can be thought of as a collection of domains, all of which share the
-    same DNS records (i.e. they point to the same IP). An API key generated via the 
+    same DNS records (i.e. they point to the same IP). An API key generated via the
     Memset customer control panel is needed with the following minimum scope:
     `dns.zone_domain_create`, `dns.zone_domain_delete`, `dns.zone_domain_list`.
 description:
@@ -44,7 +44,7 @@ options:
 EXAMPLES = '''
 # Create the zone domain 'test.com'
 - name: create zone domain
-  local_action: 
+  local_action:
     module: memset_zone_domain
     domain: test.com
     zone: testzone
@@ -54,6 +54,7 @@ EXAMPLES = '''
 
 RETURN = ''' # '''
 
+
 def check(args):
     api_method = 'dns.zone_domain_list'
 
@@ -61,10 +62,11 @@ def check(args):
 
     zone_exists = check_zone_domain(data=response, domain=args['domain'])
 
-    # set changed to true if the operation would cause a change    
-    has_changed = ( (zone_exists and args['state'] == 'absent') or (not zone_exists and args['state'] == 'present') )
+    # set changed to true if the operation would cause a change
+    has_changed = ((zone_exists and args['state'] == 'absent') or (not zone_exists and args['state'] == 'present'))
 
     module.exit_json(changed=has_changed)
+
 
 def create_or_delete_domain(args):
     has_changed = False
@@ -122,25 +124,26 @@ def create_or_delete_domain(args):
     else:
         module.exit_json(changed=False, msg=msg)
 
+
 def main():
     global module
     module = AnsibleModule(
-        argument_spec = dict(
-            state     = dict(required=False, default='present', choices=[ 'present', 'absent' ], type='str'),
-            api_key   = dict(required=True, type='str', no_log=True),
-            domain    = dict(required=True, aliases=['name'], type='str'),
-            zone_name = dict(required=True, aliases=['zone'], type='str')
+        argument_spec=dict(
+            state=dict(required=False, default='present', choices=['present', 'absent'], type='str'),
+            api_key=dict(required=True, type='str', no_log=True),
+            domain=dict(required=True, aliases=['name'], type='str'),
+            zone_name=dict(required=True, aliases=['zone'], type='str')
         ),
         supports_check_mode=True
     )
-    
+
     args = dict()
-    args['payload']   = dict()
-    args['state']     = module.params['state']
-    args['api_key']   = module.params['api_key']
-    args['domain']    = module.params['domain']
+    args['payload'] = dict()
+    args['state'] = module.params['state']
+    args['api_key'] = module.params['api_key']
+    args['domain'] = module.params['domain']
     args['zone_name'] = module.params['zone_name']
-    
+
     # zone domain length must be less than 250 chars
     if len(args['domain']) > 250:
         module.fail_json(failed=True, msg="Zone domain must be less than 250 characters in length.")
@@ -152,5 +155,5 @@ def main():
 
 from ansible.module_utils.basic import AnsibleModule
 
-if __name__ == '__main__':  
+if __name__ == '__main__':
     main()
