@@ -2,6 +2,7 @@
 
 import requests
 
+
 def memset_api_call(api_key, api_method, payload=None):
     '''
     Generic function which returns results back to calling function.
@@ -48,6 +49,7 @@ def memset_api_call(api_key, api_method, payload=None):
 
     return(has_failed, msg, response)
 
+
 def check_zone_domain(data, domain):
     '''
     Returns true if domain already exists, and false if not.
@@ -58,6 +60,7 @@ def check_zone_domain(data, domain):
                 return True
         else:
             return False
+
 
 def check_zone(data, name):
     '''
@@ -70,12 +73,14 @@ def check_zone(data, name):
         else:
             return False
 
+
 def get_zone_id(opts):
     '''
     Returns the zone's id if it exists and is unique
     '''
     api_method = 'dns.zone_list'
-    has_failed, msg, response = memset_api_call(api_key=opts['api_key'], api_method=api_method)
+    has_failed, msg, response = memset_api_call(api_key=opts['api_key'],
+                                                api_method=api_method)
 
     counter = 0
     failed = False
