@@ -20,7 +20,7 @@ version_added: "2.4"
 short_description: Manage zone records
 notes:
   - Zones can be thought of as a logical group of domains, all of which share the
-    same DNS records (i.e. they point to the same IP). An API key generated via the 
+    same DNS records (i.e. they point to the same IP). An API key generated via the
     Memset customer control panel is needed with the following minimum scope:
     `dns.zone_create`, `dns.zone_delete`, `dns.zone_list`.
 description:
@@ -50,12 +50,12 @@ options:
     relative:
         required: false
         description:
-            - If set then the current domain is added onto the address field for CNAME, MX, NS 
+            - If set then the current domain is added onto the address field for CNAME, MX, NS
               and SRV record types.
     ttl:
         required: false
         description:
-            - The record's TTL in seconds (will inherit zone's TTL if not explicitly set). 
+            - The record's TTL in seconds (will inherit zone's TTL if not explicitly set).
               This must be one of: 0, 300, 600, 900, 1800, 3600, 7200, 10800, 21600, 43200, 86400
               (where 0 implies inheritance from the zone)
     zone:
@@ -91,6 +91,7 @@ EXAMPLES = '''
 
 RETURN = ''' # '''
 
+
 def create_or_delete(args):
     has_failed = False
     has_changed = False
@@ -115,7 +116,8 @@ def create_or_delete(args):
         _, _, record_response = memset_api_call(api_key=args['api_key'], api_method=api_method)
 
         # find any matching records
-        records = [record for record in record_response.json() if record['zone_id'] == zone['id'] and record['record'] == args['record'] and record['type'] == args['type']]
+        records = [record for record in record_response.json() if record['zone_id'] == zone['id']
+                   and record['record'] == args['record'] and record['type'] == args['type']]
 
         if args['state'] == 'present':
             # assemble the new record
@@ -182,31 +184,31 @@ def create_or_delete(args):
 def main(args=dict()):
     global module
     module = AnsibleModule(
-        argument_spec = dict(
-            state    = dict(required=True, choices=[ 'present', 'absent' ], type='str'),
-            api_key  = dict(required=True, type='str', no_log=True),
-            zone     = dict(required=True, type='str'),
-            type     = dict(required=True, aliases=['type'], choices=[ 'A', 'AAAA', 'CNAME', 'MX', 'NS', 'SRV', 'TXT' ], type='str'),
-            data     = dict(required=True, aliases=['ip'], type='str'),
-            record   = dict(required=False, default='', type='str'),
-            ttl      = dict(required=False, default=0, choices=[ 0, 300, 600, 900, 1800, 3600, 7200, 10800, 21600, 43200, 86400 ], type='int'),
-            priority = dict(required=False, default=0, type='int'),
-            relative = dict(required=False, default=False, type='bool')
+        argument_spec=dict(
+            state=dict(required=True, choices=['present', 'absent'], type='str'),
+            api_key=dict(required=True, type='str', no_log=True),
+            zone=dict(required=True, type='str'),
+            type=dict(required=True, aliases=['type'], choices=['A', 'AAAA', 'CNAME', 'MX', 'NS', 'SRV', 'TXT'], type='str'),
+            data=dict(required=True, aliases=['ip'], type='str'),
+            record=dict(required=False, default='', type='str'),
+            ttl=dict(required=False, default=0, choices=[0, 300, 600, 900, 1800, 3600, 7200, 10800, 21600, 43200, 86400], type='int'),
+            priority=dict(required=False, default=0, type='int'),
+            relative=dict(required=False, default=False, type='bool')
         ),
         supports_check_mode=True
     )
 
-    args['payload']     = dict()
-    args['state']       = module.params['state']
-    args['api_key']     = module.params['api_key']
-    args['zone']        = module.params['zone']
-    args['type']        = module.params['type']
-    args['record']      = module.params['record']
-    args['address']     = module.params['data']
-    args['priority']    = module.params['priority']
-    args['relative']    = module.params['relative']
-    args['ttl']         = module.params['ttl']
-    args['check_mode']  = module.check_mode
+    args['payload'] = dict()
+    args['state'] = module.params['state']
+    args['api_key'] = module.params['api_key']
+    args['zone'] = module.params['zone']
+    args['type'] = module.params['type']
+    args['record'] = module.params['record']
+    args['address'] = module.params['data']
+    args['priority'] = module.params['priority']
+    args['relative'] = module.params['relative']
+    args['ttl'] = module.params['ttl']
+    args['check_mode'] = module.check_mode
 
     if args['priority']:
         if not 0 <= args['priority'] <= 999:
@@ -221,5 +223,5 @@ def main(args=dict()):
 
 from ansible.module_utils.basic import AnsibleModule
 
-if __name__ == '__main__':  
+if __name__ == '__main__':
     main()
