@@ -20,9 +20,9 @@ short_description: Request reload of Memset's DNS infrastructure
 notes:
   - DNS reload requests are a best-effort service provided by Memset; these generally
     happen every 15 minutes by default, however you can request an immediate reload if
-    later tasks rely on the records being created. An API key generated via the 
+    later tasks rely on the records being created. An API key generated via the
     Memset customer control panel is required with the following minimum scope:
-    `dns.reload`. If you wish to poll the job status to wait until the reload has 
+    `dns.reload`. If you wish to poll the job status to wait until the reload has
     completed, then `job.status` is also required.
 description:
     - Request a reload of Memset's DNS infrastructure, and optionally poll until it finishes.
@@ -47,20 +47,21 @@ EXAMPLES = '''
 
 RETURN = ''' # '''
 
+
 def main():
     module = AnsibleModule(
-        argument_spec = dict(
-            api_key    = dict(required=True, type='str', no_log=True),
-            poll       = dict(required=False, default=False, type='bool')
+        argument_spec=dict(
+            api_key=dict(required=True, type='str', no_log=True),
+            poll=dict(required=False, default=False, type='bool')
         ),
     )
 
-    api_key    = module.params['api_key']
-    poll       = module.params['poll']
+    api_key = module.params['api_key']
+    poll = module.params['poll']
 
     payload = dict()
     api_method = 'dns.reload'
-    
+
     has_failed, msg, response = memset_api_call(api_key=api_key, api_method=api_method, payload=payload)
 
     if poll:
@@ -82,8 +83,8 @@ def main():
         module.fail_json(failed=True, msg=msg)
     else:
         module.exit_json(changed=True, msg=msg)
-            
+
 from ansible.module_utils.basic import AnsibleModule
 
-if __name__ == '__main__':  
+if __name__ == '__main__':
     main()
