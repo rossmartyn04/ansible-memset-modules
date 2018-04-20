@@ -19,7 +19,7 @@ version_added: "2.3"
 short_description: Manage zones
 notes:
   - Zones can be thought of as a logical group of domains, all of which share the
-    same DNS records (i.e. they point to the same IP). An API key generated via the 
+    same DNS records (i.e. they point to the same IP). An API key generated via the
     Memset customer control panel is needed with the following minimum scope:
     `dns.zone_create`, `dns.zone_delete`, `dns.zone_list`.
 description:
@@ -32,7 +32,7 @@ options:
     name:
         required: true
         description:
-            - The zone nickname; usually the same as the main domain. Ensure this 
+            - The zone nickname; usually the same as the main domain. Ensure this
               value has at most 250 characters.
     ttl:
         required: false
@@ -67,6 +67,7 @@ EXAMPLES = '''
 
 RETURN = ''' # '''
 
+
 def check(args):
     # get the zones and check if the relevant zone exists
     api_method = 'dns.zone_list'
@@ -74,10 +75,11 @@ def check(args):
 
     zone_exists = check_zone(data=response, name=args['name'])
 
-    # set changed to true if the operation would cause a change    
-    has_changed = ( (zone_exists and args['state'] == 'absent') or (not zone_exists and args['state'] == 'present') )
+    # set changed to true if the operation would cause a change
+    has_changed = ((zone_exists and args['state'] == 'absent') or (not zone_exists and args['state'] == 'present'))
 
     module.exit_json(changed=has_changed)
+
 
 def create_or_delete(args):
     has_failed = False
@@ -124,7 +126,7 @@ def create_or_delete(args):
                         zone_id = zone['id']
                         domain_count = len(zone['domains'])
                         record_count = len(zone['records'])
-                if (domain_count > 0 or record_count > 0) and args['force'] == False:
+                if (domain_count > 0 or record_count > 0) and args['force'] is False:
                     msg = 'Zone contains domains or records and force was not used.'
                     has_failed, has_changed = True, False
                     module.fail_json(failed=has_failed, changed=has_changed, msg=msg, rc=1)
@@ -144,24 +146,25 @@ def create_or_delete(args):
     else:
         module.exit_json(changed=has_changed, msg=msg)
 
+
 def main(args=dict()):
     global module
     module = AnsibleModule(
-        argument_spec = dict(
-            state   = dict(required=True, choices=[ 'present', 'absent' ], type='str'),
-            api_key = dict(required=True, type='str', no_log=True),
-            name    = dict(required=True, aliases=['nickname'], type='str'),
-            ttl     = dict(required=False, default=0, type='int'),
-            force   = dict(required=False, default=False, type='bool')
+        argument_spec=dict(
+            state=dict(required=True, choices=['present', 'absent'], type='str'),
+            api_key=dict(required=True, type='str', no_log=True),
+            name=dict(required=True, aliases=['nickname'], type='str'),
+            ttl=dict(required=False, default=0, type='int'),
+            force=dict(required=False, default=False, type='bool')
         ),
         supports_check_mode=True
     )
 
-    args['state']   = module.params['state']
+    args['state'] = module.params['state']
     args['api_key'] = module.params['api_key']
-    args['name']    = module.params['name']
-    args['ttl']     = module.params['ttl']
-    args['force']   = module.params['force']
+    args['name'] = module.params['name']
+    args['ttl'] = module.params['ttl']
+    args['force'] = module.params['force']
     args['payload'] = dict()
 
     has_failed = False
@@ -170,10 +173,10 @@ def main(args=dict()):
     if len(args['name']) > 250:
         has_failed = True
         msg = "Zone name must be less than 250 characters in length."
-    if args['ttl'] not in [ 0, 300, 600, 900, 1800, 3600, 7200, 10800, 21600, 43200, 86400 ]:
+    if args['ttl'] not in [0, 300, 600, 900, 1800, 3600, 7200, 10800, 21600, 43200, 86400]:
         has_failed = True
         msg = "TTL is not an accepted duration"
-        
+
     if has_failed:
         module.fail_json(failed=has_failed, msg=msg)
 
@@ -184,5 +187,5 @@ def main(args=dict()):
 
 from ansible.module_utils.basic import AnsibleModule
 
-if __name__ == '__main__':  
+if __name__ == '__main__':
     main()
