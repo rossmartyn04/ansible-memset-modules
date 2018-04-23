@@ -1,0 +1,124 @@
+- name: create random string
+  set_fact:
+    zone_name: "{{ random_string | hash('md5') | truncate(16, True, '') + (65535 | random | string) }}.ansible.example.com"
+
+- name: create zone with incorrect API key
+  local_action:
+    module: memset_zone
+    api_key: "wa9aerahhie0eekee9iaphoorovooyia"
+    state: present
+    name: "{{ zone_name }}"
+    ttl: 300
+  ignore_errors: true
+  register: result
+
+- assert:
+    that:
+      - "'some text' in result.stdout"
+
+- name: test creating zone
+  local_action:
+    module: memset_zone
+    api_key: "{{ api_key }}"
+    state: present
+    name: "{{ zone_name }}"
+    ttl: 300
+  check_mode: true
+  register: result
+
+- assert:
+    that:
+      - result.changed
+      - result.check_mode == true
+
+- name: create zone
+  local_action:
+    module: memset_zone
+    api_key: "{{ api_key }}"
+    state: present
+    name: "{{ zone_name }}"
+    ttl: 300
+  register: result
+
+- assert:
+    that:
+      - result.changed
+
+- name: test deleting zone
+  local_action:
+    module: memset_zone
+    api_key: "{{ api_key }}"
+    state: absent
+    name: "{{ zone_name }}"
+  check_mode: true
+  register: result
+
+- assert:
+    that:
+      - result.changed
+      - result.check_mode == true
+
+- name: delete empty zone
+  local_action:
+    module: memset_zone
+    api_key: "{{ api_key }}"
+    state: absent
+    name: "{{ zone_name }}"
+  register: result
+
+- assert:
+    that:
+      - result.changed
+
+- name: create zone
+  local_action:
+    module: memset_zone
+    api_key: "{{ api_key }}"
+    state: present
+    name: "{{ zone_name }}"
+    ttl: 300
+  register: result
+
+- name: create duplicate zone
+  local_action:
+    module: memset_zone
+    api_key: "{{ api_key }}"
+    state: present
+    name: "{{ zone_name }}"
+  ignore_errors: true
+  register: result
+
+- assert:
+    that:
+      - result is failed
+
+- name: create zone domain
+  local_action:
+    module: memset_zone_domain
+    api_key: "{{ api_key }}"
+    state: present
+    domain: "{{ zone_name }}"
+    zone: "{{ zone_name }}"
+  register: result
+
+- name: delete zone without force
+  local_action:
+    module: memset_zone
+    api_key: "{{ api_key }}"
+    state: absent
+    name: "{{ zone_name }}"
+  register: result
+
+- name: delete zone with force
+  local_action:
+    module: memset_zone
+    api_key: "{{ api_key }}"
+    state: absent
+    name: "{{ zone_name }}"
+    force: True
+  register: result
+
+# always
+
+- name: delete zone (cleanup)
+  ignore_errors: True
