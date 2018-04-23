@@ -14,7 +14,7 @@
 
 - assert:
     that:
-      - "'some text' in result.stdout"
+      - "'ApiErrorForbidden' in result.stdout"
 
 - name: test creating zone
   local_action:
@@ -58,56 +58,46 @@
       - result.changed
       - result.check_mode == true
 
+# this should succeed
 - name: delete empty zone
   local_action:
     module: memset_zone
     api_key: "{{ api_key }}"
     state: absent
     name: "{{ zone_name }}"
+    force: False
   register: result
 
 - assert:
     that:
       - result.changed
 
+# this should succeed
 - name: create zone
   local_action:
     module: memset_zone
     api_key: "{{ api_key }}"
     state: present
     name: "{{ zone_name }}"
-    ttl: 300
   register: result
 
+- assert:
+    that:
+      - result.changed
+      - result is successful
+
+# this should show no change or failure
 - name: create duplicate zone
   local_action:
     module: memset_zone
     api_key: "{{ api_key }}"
     state: present
     name: "{{ zone_name }}"
-  ignore_errors: true
   register: result
 
 - assert:
     that:
-      - result is failed
-
-- name: create zone domain
-  local_action:
-    module: memset_zone_domain
-    api_key: "{{ api_key }}"
-    state: present
-    domain: "{{ zone_name }}"
-    zone: "{{ zone_name }}"
-  register: result
-
-- name: delete zone without force
-  local_action:
-    module: memset_zone
-    api_key: "{{ api_key }}"
-    state: absent
-    name: "{{ zone_name }}"
-  register: result
+      - not result.changed
 
 - name: delete zone with force
   local_action:
@@ -118,7 +108,7 @@
     force: True
   register: result
 
-# always
-
-- name: delete zone (cleanup)
-  ignore_errors: True
+- assert:
+    that:
+      - result.changed
+      - result is successful
