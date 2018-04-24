@@ -80,59 +80,68 @@ memset_api:
 '''
 
 
-#def reload_dns(args):
-
-
-def main():
+def reload_dns(args):
+    retvals, payload = dict(), dict()
     has_changed, has_failed = False, False
     memset_api, msg = None, None
-    retvals = dict()
 
-    module = AnsibleModule(
-        argument_spec=dict(
-            api_key=dict(required=True, type='str', no_log=True),
-            poll=dict(required=False, default=False, type='bool')
-        ),
-    )
-
-    api_key = module.params['api_key']
-    poll = module.params['poll']
-
-    payload = dict()
     api_method = 'dns.reload'
 
-    has_failed, msg, response = memset_api_call(api_key=api_key, api_method=api_method, payload=payload)
+    has_failed, msg, response = memset_api_call(api_key=args['api_key'], api_method=api_method)
 
-    if not has_failed:
-        has_changed = True
-        memset_api = response.json()
+    if has_failed:
+        retvals['has_failed'] = has_failed
+        retvals['memset_api'] = response.json()
+        retvals['msg'] = msg
+        return(retvals)
 
-    if poll:
+    if args['poll']:
         payload['id'] = response.json()['id']
         api_method = 'job.status'
 
-        _, _, response = memset_api_call(api_key=api_key, api_method=api_method, payload=payload)
+        _, _, response = memset_api_call(api_key=args['api_key'], api_method=api_method, payload=payload)
 
         while not response.json()['finished']:
             counter = 0
             while counter < 6:
                 sleep(5)
-                _, msg, response = memset_api_call(api_key=api_key, api_method=api_method, payload=payload)
+                _, msg, response = memset_api_call(
+                    api_key=args['api_key'], api_method=api_method, payload=payload)
                 counter += 1
         if response.json()['error']:
-            module.fail_json(failed=True, msg=msg, stderr='Memset API returned job error', memset_api=response.json())
+            module.fail_json(
+                failed=True, msg=msg, stderr='Memset API returned job error', memset_api=response.json())
         else:
-            memset_api = response.json()
+            retvals['memset_api'] = response.json()
+            has_changed = True
 
     # assemble return variables
-    retvals['failed'] = has_failed
-    retvals['changed'] = has_changed
-    if msg is not None:
+    retvals['has_failed'] = has_failed
+    retvals['has_changed'] = has_changed
+    if msg is None:
         retvals['msg'] = msg
-    if memset_api is not None:
+    if memset_api is None:
         retvals['memset_api'] = msg
 
-    if has_failed:
+    return(retvals)
+
+
+def main(args=dict()):
+    global module
+    module = AnsibleModule(
+        argument_spec=dict(
+            api_key=dict(required=True, type='str', no_log=True),
+            poll=dict(required=False, default=False, type='bool')
+        ),
+        supports_check_mode=False
+    )
+
+    args['api_key'] = module.params['api_key']
+    args['poll'] = module.params['poll']
+
+    retvals = reload_dns(args)
+
+    if retvals['has_failed']:
         module.fail_json(**retvals)
     else:
         module.exit_json(**retvals)
