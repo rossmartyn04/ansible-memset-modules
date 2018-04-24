@@ -45,10 +45,49 @@ EXAMPLES = '''
     poll=true
 '''
 
-RETURN = ''' # '''
+RETURN = '''
+---
+memset_api:
+  description: Raw response from the Memset API
+  returned: always
+  type: complex
+  contains:
+    error:
+      description: Whether the job ended in error state
+      returned: always
+      type: bool
+      sample: true
+    finished:
+      description: Whether the job completed before the result was returned
+      returned: always
+      type: bool
+      sample: true
+    id:
+      description: Job ID
+      returned: always
+      type: string
+      sample: "c9cc8ad2a3e3fb8c63ed83c424928ef8"
+    status:
+      description: Job status
+      returned: always
+      type: string
+      sample: "DONE"
+    type:
+      description: Job type
+      returned: always
+      type: string
+      sample: "dns"
+'''
+
+
+#def reload_dns(args):
 
 
 def main():
+    has_changed, has_failed = False, False
+    memset_api, msg = None, None
+    retvals = dict()
+
     module = AnsibleModule(
         argument_spec=dict(
             api_key=dict(required=True, type='str', no_log=True),
@@ -60,10 +99,13 @@ def main():
     poll = module.params['poll']
 
     payload = dict()
-    stderr = None
     api_method = 'dns.reload'
 
     has_failed, msg, response = memset_api_call(api_key=api_key, api_method=api_method, payload=payload)
+
+    if not has_failed:
+        has_changed = True
+        memset_api = response.json()
 
     if poll:
         payload['id'] = response.json()['id']
@@ -78,12 +120,22 @@ def main():
                 _, msg, response = memset_api_call(api_key=api_key, api_method=api_method, payload=payload)
                 counter += 1
         if response.json()['error']:
-            module.fail_json(failed=True, msg=msg, stderr='Memset API returned job error')
+            module.fail_json(failed=True, msg=msg, stderr='Memset API returned job error', memset_api=response.json())
+        else:
+            memset_api = response.json()
+
+    # assemble return variables
+    retvals['failed'] = has_failed
+    retvals['changed'] = has_changed
+    if msg is not None:
+        retvals['msg'] = msg
+    if memset_api is not None:
+        retvals['memset_api'] = msg
 
     if has_failed:
-        module.fail_json(failed=True, msg=msg)
+        module.fail_json(**retvals)
     else:
-        module.exit_json(changed=True, msg=msg)
+        module.exit_json(**retvals)
 
 from ansible.module_utils.basic import AnsibleModule
 
