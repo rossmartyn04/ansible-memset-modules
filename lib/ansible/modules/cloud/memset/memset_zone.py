@@ -84,7 +84,7 @@ def check(args):
 def create_or_delete(args):
     has_failed = False
     has_changed = False
-    msg = ''
+    msg, _stderr = None
     payload = args['payload']
 
     # get the zones and check if the relevant zone exists
@@ -127,9 +127,9 @@ def create_or_delete(args):
                         domain_count = len(zone['domains'])
                         record_count = len(zone['records'])
                 if (domain_count > 0 or record_count > 0) and args['force'] is False:
-                    msg = 'Zone contains domains or records and force was not used.'
+                    _stderr = 'Zone contains domains or records and force was not used.'
                     has_failed, has_changed = True, False
-                    module.fail_json(failed=has_failed, changed=has_changed, msg=msg, rc=1)
+                    module.fail_json(failed=has_failed, changed=has_changed, msg=msg, stderr=_stderr rc=1)
                 api_method = 'dns.zone_delete'
                 payload['id'] = zone_id
                 has_failed, msg, response = memset_api_call(api_key=args['api_key'], api_method=api_method, payload=payload)

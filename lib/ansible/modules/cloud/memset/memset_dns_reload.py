@@ -60,6 +60,7 @@ def main():
     poll = module.params['poll']
 
     payload = dict()
+    stderr = None
     api_method = 'dns.reload'
 
     has_failed, msg, response = memset_api_call(api_key=api_key, api_method=api_method, payload=payload)
@@ -77,7 +78,7 @@ def main():
                 _, msg, response = memset_api_call(api_key=api_key, api_method=api_method, payload=payload)
                 counter += 1
         if response.json()['error']:
-            module.fail_json(failed=True, msg='Memset API returned job error')
+            module.fail_json(failed=True, msg=msg, stderr='Memset API returned job error')
 
     if has_failed:
         module.fail_json(failed=True, msg=msg)

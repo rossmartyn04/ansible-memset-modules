@@ -71,7 +71,7 @@ def check(args):
 def create_or_delete_domain(args):
     has_changed = False
     has_failed = False
-    msg = None
+    msg, _stderr = None
     payload = args['payload']
 
     # get the zones and check if the relevant zone exists
@@ -82,8 +82,8 @@ def create_or_delete_domain(args):
 
     if args['state'] == 'present':
         if args['zone_name'] is None:
-            msg = 'A zone is needed to add the domain to.'
-            module.fail_json(failed=True, msg=msg)
+            _stderr = 'A zone is needed to add the domain to.'
+            module.fail_json(failed=True, stderr=_stderr)
         api_method = 'dns.zone_list'
         _, _, response = memset_api_call(api_key=args['api_key'], api_method=api_method, payload=payload)
         counter = 0
@@ -107,7 +107,8 @@ def create_or_delete_domain(args):
                     has_changed = True
         else:
             has_failed = True
-            msg = 'Multiple zones with the same name exist.'
+            _stderr = 'Multiple zones with the same name exist.'
+            module.fail_json(failed=True, stderr=_stderr)
     if args['state'] == 'absent':
         if zone_exists:
             api_method = 'dns.zone_domain_delete'
@@ -146,7 +147,7 @@ def main():
 
     # zone domain length must be less than 250 chars
     if len(args['domain']) > 250:
-        module.fail_json(failed=True, msg="Zone domain must be less than 250 characters in length.")
+        module.fail_json(failed=True, stderr="Zone domain must be less than 250 characters in length.")
 
     if module.check_mode:
         check(args)

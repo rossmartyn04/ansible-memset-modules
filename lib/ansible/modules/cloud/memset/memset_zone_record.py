@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-# from __future__ import (absolute_import, division, print_function)
+from __future__ import (absolute_import, division, print_function)
 from ansible.module_utils.memset import check_zone
 from ansible.module_utils.memset import memset_api_call
 from ansible.module_utils.memset import get_zone_id
@@ -95,7 +95,7 @@ RETURN = ''' # '''
 def create_or_delete(args):
     has_failed = False
     has_changed = False
-    msg = ''
+    msg, _stderr = None
     payload = args['payload']
 
     # get the zones and check if the relevant zone exists
@@ -178,7 +178,10 @@ def create_or_delete(args):
         if args['state'] == 'absent':
             has_changed = False
 
-    return(has_changed, has_failed, msg, response)
+    if has_failed:
+        module.fail_json(failed=has_failed, msg=msg, stderr=_stderr)
+    else:
+        module.exit_json(changed=has_changed, msg=msg)
 
 
 def main(args=dict()):
@@ -212,14 +215,9 @@ def main(args=dict()):
 
     if args['priority']:
         if not 0 <= args['priority'] <= 999:
-            module.fail_json(failed=True, msg='Priority must be in the range 0 > 999 (inclusive).')
+            module.fail_json(failed=True, stderr='Priority must be in the range 0 > 999 (inclusive).')
 
-    has_changed, has_failed, msg, response = create_or_delete(args)
-
-    if has_failed:
-        module.fail_json(failed=has_failed, msg=msg)
-    else:
-        module.exit_json(changed=has_changed, msg=msg)
+    create_or_delete(args)
 
 from ansible.module_utils.basic import AnsibleModule
 
