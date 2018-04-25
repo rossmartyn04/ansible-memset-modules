@@ -118,7 +118,6 @@ def check(args):
     retvals['msg'] = 'Zone "{}" exists: {}' . format(args['name'], str(zone_exists))
 
     return(retvals)
-    #module.exit_json(changed=has_changed)
 
 
 def create_or_delete(args):
@@ -225,6 +224,7 @@ def main(args=dict()):
     if len(args['name']) > 250:
         has_failed = True
         msg = "Zone name must be less than 250 characters in length."
+    # ttl must be a valid duration when creating a zone
     if args['ttl'] not in [0, 300, 600, 900, 1800, 3600, 7200, 10800, 21600, 43200, 86400] and args['state'] == 'present':
         has_failed = True
         msg = "TTL is not an accepted duration"
