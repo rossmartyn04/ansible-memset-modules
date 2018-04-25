@@ -16,7 +16,7 @@ DOCUMENTATION = '''
 ---
 module: memset_zone
 author: "Simon Weald (@analbeard)"
-version_added: "2.3"
+version_added: "2.5"
 short_description: Manage zones
 notes:
   - Zones can be thought of as a logical group of domains, all of which share the
