@@ -35,14 +35,16 @@ options:
         default: false
         type: bool
         description:
-            - Boolean value, if set will poll the reload job status
+            - Boolean value, if set will poll the reload job status and not return
+              until the job has completed
 '''
 
 EXAMPLES = '''
-- name: request DNS reload
-  local_action: memset_dns_reload:
-    api_key=5eb86c9196ab03919abcf03857163741
-    poll=true
+- name: submit DNS reload and poll
+  memset_zone_record:
+    api_key: 5eb86c9196ab03919abcf03857163741
+    poll: True
+  delegate_to: localhost
 '''
 
 RETURN = ''' # '''
