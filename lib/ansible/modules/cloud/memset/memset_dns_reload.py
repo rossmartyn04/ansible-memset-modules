@@ -13,9 +13,9 @@ ANSIBLE_METADATA = {
 
 DOCUMENTATION = '''
 ---
-module: memset_zone_domain
+module: memset_dns_reload
 author: "Simon Weald (@analbeard)"
-version_added: "2.3"
+version_added: "2.5"
 short_description: Request reload of Memset's DNS infrastructure
 notes:
   - DNS reload requests are a best-effort service provided by Memset; these generally
@@ -41,7 +41,7 @@ options:
 
 EXAMPLES = '''
 - name: submit DNS reload and poll
-  memset_zone_record:
+  memset_dns_reload:
     api_key: 5eb86c9196ab03919abcf03857163741
     poll: True
   delegate_to: localhost
