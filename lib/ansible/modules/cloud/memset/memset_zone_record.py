@@ -16,7 +16,7 @@ DOCUMENTATION = '''
 ---
 module: memset_zone_record
 author: "Simon Weald (@analbeard)"
-version_added: "2.4"
+version_added: "2.5"
 short_description: Manage zone records
 notes:
   - Zones can be thought of as a logical group of domains, all of which share the
@@ -67,8 +67,7 @@ options:
 EXAMPLES = '''
 # Create DNS record for www.domain.com
 - name: create DNS record
-  local_action:
-    module: memset_zone_record
+  memset_zone_record
     api_key: dcf089a2896940da9ffefb307ef49ccd
     state: present
     zone: domain.com
@@ -77,16 +76,17 @@ EXAMPLES = '''
     data: 1.2.3.4
     ttl: 300
     relative: false
+  delegate_to: localhost
 
 # create an SPF record for domain.com
 - name: create SPF record for domain.com
-  local_action:
-    module: memset_zone_record
+  memset_zone_record
     api_key: dcf089a2896940da9ffefb307ef49ccd
     state: present
     zone: domain.com
     type: TXT
     data: "v=spf1 +a +mx +ip4:a1.2.3.4 ?all"
+  delegate_to: localhost
 '''
 
 RETURN = '''
