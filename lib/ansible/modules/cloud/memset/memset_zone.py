@@ -205,7 +205,7 @@ def main(args=dict()):
             state=dict(required=True, choices=['present', 'absent'], type='str'),
             api_key=dict(required=True, type='str', no_log=True),
             name=dict(required=True, aliases=['nickname'], type='str'),
-            ttl=dict(required=False, default=0, type='int'),
+            ttl=dict(required=False, default=0, choices=[0, 300, 600, 900, 1800, 3600, 7200, 10800, 21600, 43200, 86400]  type='int'),
             force=dict(required=False, default=False, type='bool')
         ),
         supports_check_mode=True
@@ -218,17 +218,10 @@ def main(args=dict()):
     args['force'] = module.params['force']
     args['payload'] = dict()
 
-    has_failed = False
-
     # zone nickname length must be less than 250 chars
     if len(args['name']) > 250:
         has_failed = True
         msg = "Zone name must be less than 250 characters in length."
-    # ttl must be a valid duration when creating a zone
-    if args['ttl'] not in [0, 300, 600, 900, 1800, 3600, 7200, 10800, 21600, 43200, 86400] and args['state'] == 'present':
-        has_failed = True
-        msg = "TTL is not an accepted duration"
-    if has_failed:
         module.fail_json(failed=has_failed, msg=msg)
 
     if module.check_mode:
