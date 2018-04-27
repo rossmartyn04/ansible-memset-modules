@@ -16,7 +16,7 @@ DOCUMENTATION = '''
 ---
 module: memset_zone_domain
 author: "Simon Weald (@analbeard)"
-version_added: "2.3"
+version_added: "2.5"
 short_description: Manage zone domains
 notes:
   - Zone domains can be thought of as a collection of domains, all of which share the
@@ -44,12 +44,12 @@ options:
 EXAMPLES = '''
 # Create the zone domain 'test.com'
 - name: create zone domain
-  local_action:
-    module: memset_zone_domain
+  memset_zone_domain
     domain: test.com
     zone: testzone
     state: present
     api_key: 5eb86c9196ab03919abcf03857163741
+  delegate_to: localhost
 '''
 
 RETURN = '''
