@@ -107,12 +107,10 @@ def reload_dns(args):
             counter = 0
             while counter < 6:
                 sleep(5)
-                _, msg, response = memset_api_call(
-                    api_key=args['api_key'], api_method=api_method, payload=payload)
+                _, msg, response = memset_api_call(api_key=args['api_key'], api_method=api_method, payload=payload)
                 counter += 1
         if response.json()['error']:
-            module.fail_json(
-                failed=True, msg=msg, stderr='Memset API returned job error', memset_api=response.json())
+            module.fail_json(failed=True, msg=msg, stderr='Memset API returned job error', memset_api=response.json())
         else:
             retvals['memset_api'] = response.json()
             has_changed = True
