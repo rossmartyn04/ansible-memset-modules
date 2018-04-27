@@ -74,31 +74,24 @@ def check_zone(data, name):
             return False
 
 
-def get_zone_id(opts):
+def get_zone_id(zone_name, zone_list):
     '''
     Returns the zone's id if it exists and is unique
     '''
-    api_method = 'dns.zone_list'
-    has_failed, msg, response = memset_api_call(api_key=opts['api_key'],
-                                                api_method=api_method)
-
     counter = 0
-    failed = False
-    zone_id = None
-    if response.status_code in [201, 200]:
-        for zone in response.json():
-            if zone['nickname'] == opts['zone']:
-                zone_id = zone['id']
-                counter += 1
-        if counter == 0:
-            failed = True
-            msg = 'No matching zone found.'
-        if counter > 1:
-            zone_id = None
-            failed = True
-            msg = 'Duplicate zones found.'
-    else:
-        failed = True
-        msg = 'API returned an invalid status code.'
+    has_failed = False
+    zone_id, msg = None, None
 
-    return(failed, msg, zone_id)
+    for zone in zone_list:
+        if zone['nickname'] == zone_name:
+            zone_id = zone['id']
+            counter += 1
+    if counter == 0:
+        has_failed = True
+        msg = 'No matching zone found.'
+    if counter > 1:
+        zone_id = None
+        has_failed = True
+        msg = 'Zone ID could not be returned as duplicate zone names were detected'
+
+    return(has_failed, msg, zone_id)

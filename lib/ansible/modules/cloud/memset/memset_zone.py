@@ -2,6 +2,7 @@
 
 from __future__ import (absolute_import, division, print_function)
 from ansible.module_utils.memset import check_zone
+from ansible.module_utils.memset import get_zone_id
 from ansible.module_utils.memset import memset_api_call
 __metaclass__ = type
 
@@ -48,43 +49,81 @@ options:
 EXAMPLES = '''
 # Create the zone 'test'
 - name: create zone
-  local_action:
-    module: memset_zone
+  memset_zone
     name: test
     state: present
     api_key: 5eb86c9196ab03919abcf03857163741
     ttl: 300
+  delegate_to: localhost
 
 # Force zone deletion
 - name: force delete zone
-  local_action:
-    module: memset_zone
+  memset_zone
     name: test
     state: absent
     api_key: 5eb86c9196ab03919abcf03857163741
     force: true
+  delegate_to: localhost
 '''
 
-RETURN = ''' # '''
+RETURN = '''
+memset_api:
+  description: Zone info from the Memset API
+  returned: when state == present
+  type: complex
+  contains:
+    domains:
+      description: List of domains in this zone
+      returned: always
+      type: list
+      sample: []
+    id:
+      description: Zone id
+      returned: always
+      type: string
+      sample: "b0bb1ce851aeea6feeb2dc32fe83bf9c"
+    nickname:
+      description: Zone name
+      returned: always
+      type: string
+      sample: "example.com"
+    records:
+      description: List of DNS records for domains in this zone
+      returned: always
+      type: list
+      sample: []
+    ttl:
+      description: Default TTL for domains in this zone
+      returned: always
+      type: int
+      sample: 300
+'''
 
 
 def check(args):
     # get the zones and check if the relevant zone exists
+    retvals = dict()
+
     api_method = 'dns.zone_list'
-    _, _, response = memset_api_call(api_key=args['api_key'], api_method=api_method)
+    has_failed, _, response = memset_api_call(api_key=args['api_key'], api_method=api_method)
 
     zone_exists = check_zone(data=response, name=args['name'])
 
     # set changed to true if the operation would cause a change
     has_changed = ((zone_exists and args['state'] == 'absent') or (not zone_exists and args['state'] == 'present'))
 
-    module.exit_json(changed=has_changed)
+    retvals['changed'] = has_changed
+    retvals['failed'] = has_failed
+    retvals['memset_api'] = response.json()
+    retvals['msg'] = 'Zone "{}" exists: {}' . format(args['name'], str(zone_exists))
+
+    return(retvals)
 
 
 def create_or_delete(args):
-    has_failed = False
-    has_changed = False
-    msg = ''
+    retvals = dict()
+    has_failed, has_changed = False, False
+    msg, memset_api, _stderr = None, None, None
     payload = args['payload']
 
     # get the zones and check if the relevant zone exists
@@ -113,6 +152,18 @@ def create_or_delete(args):
                 has_failed, msg, response = memset_api_call(api_key=args['api_key'], api_method=api_method, payload=payload)
                 if not has_failed:
                     has_changed = True
+        # populate return var with zone info
+        api_method = 'dns.zone_list'
+        _, _, response = memset_api_call(api_key=args['api_key'], api_method=api_method)
+        _has_failed, _msg, _zone_id = get_zone_id(zone_name=args['name'], zone_list=response.json())
+        if not _has_failed:
+            payload = dict()
+            payload['id'] = _zone_id
+            api_method = 'dns.zone_info'
+            _, _, response = memset_api_call(api_key=args['api_key'], api_method=api_method, payload=payload)
+            retvals['memset_api'] = response.json()
+        else:
+            retvals['msg'] = _msg
     if args['state'] == 'absent':
         if zone_exists:
             _, _, response = memset_api_call(api_key=args['api_key'], api_method=api_method, payload=payload)
@@ -127,9 +178,9 @@ def create_or_delete(args):
                         domain_count = len(zone['domains'])
                         record_count = len(zone['records'])
                 if (domain_count > 0 or record_count > 0) and args['force'] is False:
-                    msg = 'Zone contains domains or records and force was not used.'
+                    _stderr = 'Zone contains domains or records and force was not used.'
                     has_failed, has_changed = True, False
-                    module.fail_json(failed=has_failed, changed=has_changed, msg=msg, rc=1)
+                    module.fail_json(failed=has_failed, changed=has_changed, msg=msg, stderr=_stderr, rc=1)
                 api_method = 'dns.zone_delete'
                 payload['id'] = zone_id
                 has_failed, msg, response = memset_api_call(api_key=args['api_key'], api_method=api_method, payload=payload)
@@ -137,14 +188,14 @@ def create_or_delete(args):
                     has_changed = True
             else:
                 has_failed, has_changed = True, False
-                msg = 'Multiple zones with the same name exist.'
+                retvals['msg'] = 'Unable to delete zone as multiple zones with the same name exist.'
         else:
             has_failed, has_changed = False, False
 
-    if has_failed:
-        module.fail_json(failed=has_failed, msg=msg)
-    else:
-        module.exit_json(changed=has_changed, msg=msg)
+    retvals['failed'] = has_failed
+    retvals['changed'] = has_changed
+
+    return(retvals)
 
 
 def main(args=dict()):
@@ -154,7 +205,7 @@ def main(args=dict()):
             state=dict(required=True, choices=['present', 'absent'], type='str'),
             api_key=dict(required=True, type='str', no_log=True),
             name=dict(required=True, aliases=['nickname'], type='str'),
-            ttl=dict(required=False, default=0, type='int'),
+            ttl=dict(required=False, default=0, choices=[0, 300, 600, 900, 1800, 3600, 7200, 10800, 21600, 43200, 86400]  type='int'),
             force=dict(required=False, default=False, type='bool')
         ),
         supports_check_mode=True
@@ -167,23 +218,21 @@ def main(args=dict()):
     args['force'] = module.params['force']
     args['payload'] = dict()
 
-    has_failed = False
-
     # zone nickname length must be less than 250 chars
     if len(args['name']) > 250:
         has_failed = True
         msg = "Zone name must be less than 250 characters in length."
-    if args['ttl'] not in [0, 300, 600, 900, 1800, 3600, 7200, 10800, 21600, 43200, 86400]:
-        has_failed = True
-        msg = "TTL is not an accepted duration"
-
-    if has_failed:
         module.fail_json(failed=has_failed, msg=msg)
 
     if module.check_mode:
-        check(args)
+        retvals = check(args)
     else:
-        create_or_delete(args)
+        retvals = create_or_delete(args)
+
+    if retvals['failed']:
+        module.fail_json(**retvals)
+    else:
+        module.exit_json(**retvals)
 
 from ansible.module_utils.basic import AnsibleModule
 
