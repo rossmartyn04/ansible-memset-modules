@@ -147,9 +147,16 @@ def create_or_delete(args, payload=dict()):
     api_method = 'dns.zone_list'
     _, _, response = memset_api_call(api_key=args['api_key'], api_method=api_method)
 
-    zone_exists = check_zone(data=response, name=args['zone'])
+    zone_exists, counter = check_zone(data=response, name=args['zone'])
 
-    if zone_exists:
+    if not zone_exists:
+        has_failed = True
+        if counter == 0:
+            _stderr = "DNS zone '{}' does not exist." . format(args['zone'])
+        elif counter > 1:
+            _stderr = "{} matches multiple zones." . format(args['zone'])
+        module.fail_json(failed=has_failed, msg=_stderr, stderr=_stderr)
+    else:
         # get a list of all zones and find the zone's ID
         _, _, zone_response = memset_api_call(api_key=args['api_key'], api_method=api_method)
         for zone in zone_response.json():
