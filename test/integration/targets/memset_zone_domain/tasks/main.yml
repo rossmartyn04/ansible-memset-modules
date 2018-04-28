@@ -1,0 +1,87 @@
+---
+- name: create domain with incorrect API key
+  local_action:
+    module: memset_zone_domain
+    api_key: "wa9aerahhie0eekee9iaphoorovooyia"
+    state: present
+    domain: "{{ test_domain }}"
+    zone: "{{ target_zone }}"
+  ignore_errors: true
+  register: result
+
+- assert:
+    that:
+      - "'ApiErrorForbidden' in result.stdout"
+
+- name: create domain over 250 chars
+  local_action:
+    module: memset_zone_domain
+    api_key: "{{ api_key }}"
+    state: present
+    domain: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.com'
+    zone: "{{ target_zone }}"
+  ignore_errors: true
+  register: result
+
+- assert:
+    that:
+      - result.failed
+      - "'Zone domain must be less than 250 characters in length' in result.stdout"
+
+- name: create domain in non-existent zone
+  local_action:
+    module: memset_zone_domain
+    api_key: "{{ api_key }}"
+    state: present
+    domain: "{{ test_domain }}"
+    zone: "non-existent-zone"
+  ignore_errors: true
+  register: result
+
+- assert:
+    that:
+      - result.failed
+      - "'DNS zone \'non-existent-zone\' does not exist, cannot create domain.' in result.stdout"
+
+- name: create domain in non-unique zone
+  local_action:
+    module: memset_zone_domain
+    api_key: "{{ api_key }}"
+    state: present
+    domain: "{{ test_domain }}"
+    zone: "{{ duplicate_zone }}"
+  ignore_errors: true
+  register: result
+
+- assert:
+    that:
+      - result.failed
+      - "'DNS zone \'non-existent-zone\' does not exist, cannot create domain.' in result.stdout"
+
+- name: test creating domain
+  local_action:
+    module: memset_zone_domain
+    api_key: "{{ api_key }}"
+    state: present
+    domain: "{{ test_domain }}"
+    zone: "{{ target_zone }}"
+  check_mode: true
+  register: result
+
+- assert:
+    that:
+      - result.changed
+      - result.check_mode == true
+
+- name: create domain
+  local_action:
+    module: memset_zone_domain
+    api_key: "{{ api_key }}"
+    state: present
+    domain: "{{ test_domain }}"
+    zone: "{{ target_zone }}"
+  register: result
+
+- assert:
+    that:
+      - result.changed
