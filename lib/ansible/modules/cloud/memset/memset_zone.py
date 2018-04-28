@@ -107,7 +107,7 @@ def check(args):
     api_method = 'dns.zone_list'
     has_failed, _, response = memset_api_call(api_key=args['api_key'], api_method=api_method)
 
-    zone_exists = check_zone(data=response, name=args['name'])
+    zone_exists, counter = check_zone(data=response, name=args['name'])
 
     # set changed to true if the operation would cause a change
     has_changed = ((zone_exists and args['state'] == 'absent') or (not zone_exists and args['state'] == 'present'))
@@ -130,7 +130,7 @@ def create_or_delete(args):
     api_method = 'dns.zone_list'
     _, _, response = memset_api_call(api_key=args['api_key'], api_method=api_method)
 
-    zone_exists = check_zone(data=response, name=args['name'])
+    zone_exists, counter = check_zone(data=response, name=args['name'])
 
     if args['state'] == 'present':
         if not zone_exists:
@@ -205,7 +205,7 @@ def main(args=dict()):
             state=dict(required=True, choices=['present', 'absent'], type='str'),
             api_key=dict(required=True, type='str', no_log=True),
             name=dict(required=True, aliases=['nickname'], type='str'),
-            ttl=dict(required=False, default=0, choices=[0, 300, 600, 900, 1800, 3600, 7200, 10800, 21600, 43200, 86400]  type='int'),
+            ttl=dict(required=False, default=0, choices=[0, 300, 600, 900, 1800, 3600, 7200, 10800, 21600, 43200, 86400], type='int'),
             force=dict(required=False, default=False, type='bool')
         ),
         supports_check_mode=True
