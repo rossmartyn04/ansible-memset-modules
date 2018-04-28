@@ -66,12 +66,17 @@ def check_zone(data, name):
     '''
     Returns true if zone already exists, and false if not.
     '''
+    counter = 0
+    exists = False
+
     if data.status_code in [201, 200]:
         for zone in data.json():
             if zone['nickname'] == name:
-                return True
-        else:
-            return False
+                counter += 1
+        if counter == 1:
+            exists = True
+
+    return(exists, counter)
 
 
 def get_zone_id(zone_name, zone_list):
