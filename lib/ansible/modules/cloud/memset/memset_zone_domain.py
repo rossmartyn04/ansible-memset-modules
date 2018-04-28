@@ -95,12 +95,21 @@ def create_or_delete_domain(args, retvals=dict()):
 
     # get the zones and check if the relevant zone exists
     api_method = 'dns.zone_list'
-    _, _, response = memset_api_call(api_key=args['api_key'], api_method=api_method)
+    has_failed, msg, response = memset_api_call(api_key=args['api_key'], api_method=api_method)
 
-    zone_exists = check_zone(data=response, name=args['zone'])
+    if has_failed:
+        retvals['failed'] = has_failed
+        retvals['msg'] = msg
+        retvals['stderr'] = msg
+        return(retvals)
+
+    zone_exists, counter = check_zone(data=response, name=args['zone'])
     if not zone_exists:
         has_failed = True
-        _stderr = "DNS zone '{}' does not exist, cannot create domain." . format(args['zone'])
+        if counter == 0:
+            _stderr = "DNS zone '{}' does not exist, cannot create domain." . format(args['zone'])
+        elif counter > 1:
+            _stderr = "{} matches multiple zones, cannot create domain." . format(args['zone'])
         module.fail_json(failed=has_failed, msg=_stderr, stderr=_stderr)
 
     if args['state'] == 'present':
@@ -120,11 +129,9 @@ def create_or_delete_domain(args, retvals=dict()):
                 api_method = 'dns.zone_domain_create'
                 payload['domain'] = args['domain']
                 payload['zone_id'] = zone_id
-                has_failed, _msg, response = memset_api_call(api_key=args['api_key'], api_method=api_method, payload=payload)
+                has_failed, msg, response = memset_api_call(api_key=args['api_key'], api_method=api_method, payload=payload)
                 if not has_failed:
                     has_changed = True
-                else:
-                    msg = _msg
         else:
             has_failed = True
             _stderr = 'Multiple zones with the same name exist.'
@@ -176,12 +183,13 @@ def main(args= dict()):
     else:
         retvals = create_or_delete_domain(args)
 
-    if args['state'] == 'present' and not module.check_mode and retvals['changed'] and not retvals['failed']:
-        payload = dict()
-        payload['domain'] = args['domain']
-        api_method = 'dns.zone_domain_info'
-        _, _, response = memset_api_call(api_key=args['api_key'], api_method=api_method, payload=payload)
-        retvals['memset_api'] = response.json()
+    if not retvals['failed']:
+        if args['state'] == 'present' and not module.check_mode and retvals['changed']:
+            payload = dict()
+            payload['domain'] = args['domain']
+            api_method = 'dns.zone_domain_info'
+            _, _, response = memset_api_call(api_key=args['api_key'], api_method=api_method, payload=payload)
+            retvals['memset_api'] = response.json()
 
     if retvals['failed']:
         module.fail_json(**retvals)
