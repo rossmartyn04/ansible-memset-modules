@@ -11,6 +11,7 @@
 
 - assert:
     that:
+      - result.failed
       - "'ApiErrorForbidden' in result.stdout"
 
 - name: create domain over 250 chars
@@ -56,7 +57,7 @@
 - assert:
     that:
       - result.failed
-      - "'DNS zone \'non-existent-zone\' does not exist, cannot create domain.' in result.stdout"
+      - "'non-existent-zone matches multiple zones, cannot create domain' in result.stdout"
 
 - name: test creating domain
   local_action:
@@ -85,3 +86,57 @@
 - assert:
     that:
       - result.changed
+
+- name: create existing domain
+  local_action:
+    module: memset_zone_domain
+    api_key: "{{ api_key }}"
+    state: present
+    domain: "{{ test_domain }}"
+    zone: "{{ target_zone }}"
+  register: result
+
+- assert:
+    that:
+      - not result.changed
+
+- name: test deleting domain
+  local_action:
+    module: memset_zone_domain
+    api_key: "{{ api_key }}"
+    state: absent
+    domain: "{{ test_domain }}"
+    zone: "{{ target_zone }}"
+  check_mode: true
+  register: result
+
+- assert:
+    that:
+      - result.changed
+      - result.check_mode == true
+
+- name: delete domain
+  local_action:
+    module: memset_zone_domain
+    api_key: "{{ api_key }}"
+    state: absent
+    domain: "{{ test_domain }}"
+    zone: "{{ target_zone }}"
+  register: result
+
+- assert:
+    that:
+      - result.changed
+
+- name: delete non-existent domain
+  local_action:
+    module: memset_zone_domain
+    api_key: "{{ api_key }}"
+    state: absent
+    domain: "{{ test_domain }}"
+    zone: "{{ target_zone }}"
+  register: result
+
+- assert:
+    that:
+      - not result.changed
