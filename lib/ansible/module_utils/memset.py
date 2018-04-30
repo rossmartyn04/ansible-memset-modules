@@ -79,24 +79,27 @@ def check_zone(data, name):
     return(exists, counter)
 
 
-def get_zone_id(zone_name, zone_list):
+def get_zone_id(zone_name, current_zones):
     '''
     Returns the zone's id if it exists and is unique
     '''
-    counter = 0
-    has_failed = False
+    zone_exists = False
     zone_id, msg = None, None
+    zone_list = []
 
-    for zone in zone_list:
+    for zone in current_zones:
         if zone['nickname'] == zone_name:
-            zone_id = zone['id']
-            counter += 1
+            zone_list.append(zone['id'])
+
+    counter = len(zone_list)
+
     if counter == 0:
-        has_failed = True
-        msg = 'No matching zone found.'
-    if counter > 1:
+        msg = 'No matching zone found'
+    elif counter == 1:
+        zone_id = zone_list[0]
+        zone_exists = True
+    elif counter > 1:
         zone_id = None
-        has_failed = True
         msg = 'Zone ID could not be returned as duplicate zone names were detected'
 
-    return(has_failed, msg, zone_id)
+    return(zone_exists, msg, counter, zone_id)

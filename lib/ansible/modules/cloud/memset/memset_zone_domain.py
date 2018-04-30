@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 from __future__ import (absolute_import, division, print_function)
-from ansible.module_utils.memset import check_zone
+from ansible.module_utils.memset import get_zone_id
 from ansible.module_utils.memset import check_zone_domain
 from ansible.module_utils.memset import memset_api_call
 __metaclass__ = type
@@ -100,42 +100,39 @@ def create_or_delete_domain(args, retvals=dict()):
     if has_failed:
         retvals['failed'] = has_failed
         retvals['msg'] = msg
-        retvals['stderr'] = msg
+        retvals['stderr'] = "API returned an error: {}" .format(response.status_code)
         return(retvals)
 
-    zone_exists, counter = check_zone(data=response, name=args['zone'])
+    zone_exists, msg, counter, zone_id = get_zone_id(zone_name=args['zone'], current_zones=response.json())
     if not zone_exists:
         has_failed = True
         if counter == 0:
-            _stderr = "DNS zone '{}' does not exist, cannot create domain." . format(args['zone'])
+            stderr = "DNS zone '{}' does not exist, cannot create domain." . format(args['zone'])
         elif counter > 1:
-            _stderr = "{} matches multiple zones, cannot create domain." . format(args['zone'])
-        module.fail_json(failed=has_failed, msg=_stderr, stderr=_stderr)
+            stderr = "{} matches multiple zones, cannot create domain." . format(args['zone'])
+
+        retvals['failed'] = has_failed
+        retvals['msg'] = stderr
+        retvals['stderr'] = stderr
+        return(retvals)
 
     if args['state'] == 'present':
-        counter = 0
-        for zone in response.json():
-            if zone['nickname'] == args['zone']:
-                zone_id = zone['id']
-                counter += 1
-        if counter == 1:
-            api_method = 'dns.zone_domain_list'
-            _, _, response = memset_api_call(api_key=args['api_key'], api_method=api_method)
-            for zone_domain in response.json():
-                if zone_domain['domain'] == args['domain']:
-                    has_changed = False
-                    break
-            else:
-                api_method = 'dns.zone_domain_create'
-                payload['domain'] = args['domain']
-                payload['zone_id'] = zone_id
-                has_failed, msg, response = memset_api_call(api_key=args['api_key'], api_method=api_method, payload=payload)
-                if not has_failed:
-                    has_changed = True
+        # making it this far means we have a unique zone to use
+        api_method = 'dns.zone_domain_list'
+        _, _, response = memset_api_call(api_key=args['api_key'], api_method=api_method)
+        for zone_domain in response.json():
+            if zone_domain['domain'] == args['domain']:
+                # zone domain already exists, nothing to change
+                has_changed = False
+                break
         else:
-            has_failed = True
-            _stderr = 'Multiple zones with the same name exist.'
-            module.fail_json(failed=True, msg=_stderr, stderr=_stderr)
+            # we need to create the domain
+            api_method = 'dns.zone_domain_create'
+            payload['domain'] = args['domain']
+            payload['zone_id'] = zone_id
+            has_failed, msg, response = memset_api_call(api_key=args['api_key'], api_method=api_method, payload=payload)
+            if not has_failed:
+                has_changed = True
     if args['state'] == 'absent':
         api_method = 'dns.zone_domain_list'
         _, _, response = memset_api_call(api_key=args['api_key'], api_method=api_method)
@@ -175,8 +172,8 @@ def main(args= dict()):
 
     # zone domain length must be less than 250 chars
     if len(args['domain']) > 250:
-        _stderr = 'Zone domain must be less than 250 characters in length.'
-        module.fail_json(failed=True, msg = _stderr, stderr=_stderr)
+        stderr = 'Zone domain must be less than 250 characters in length.'
+        module.fail_json(failed=True, msg = _stderr, stderr=stderr)
 
     if module.check_mode:
         retvals = check(args)
@@ -184,7 +181,7 @@ def main(args= dict()):
         retvals = create_or_delete_domain(args)
 
     if not retvals['failed']:
-        if args['state'] == 'present' and not module.check_mode and retvals['changed']:
+        if args['state'] == 'present' and not module.check_mode:
             payload = dict()
             payload['domain'] = args['domain']
             api_method = 'dns.zone_domain_info'

@@ -155,15 +155,15 @@ def create_or_delete(args):
         # populate return var with zone info
         api_method = 'dns.zone_list'
         _, _, response = memset_api_call(api_key=args['api_key'], api_method=api_method)
-        _has_failed, _msg, _zone_id = get_zone_id(zone_name=args['name'], zone_list=response.json())
-        if not _has_failed:
+        zone_exists, msg, counter, zone_id = get_zone_id(zone_name=args['name'], current_zones=response.json())
+        if zone_exists:
             payload = dict()
-            payload['id'] = _zone_id
+            payload['id'] = zone_id
             api_method = 'dns.zone_info'
             _, _, response = memset_api_call(api_key=args['api_key'], api_method=api_method, payload=payload)
             retvals['memset_api'] = response.json()
         else:
-            retvals['msg'] = _msg
+            retvals['msg'] = msg
     if args['state'] == 'absent':
         if zone_exists:
             _, _, response = memset_api_call(api_key=args['api_key'], api_method=api_method, payload=payload)
