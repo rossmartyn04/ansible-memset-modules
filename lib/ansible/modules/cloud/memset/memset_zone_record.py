@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 from __future__ import (absolute_import, division, print_function)
-from ansible.module_utils.memset import check_zone
+from ansible.module_utils.memset import get_zone_id
 from ansible.module_utils.memset import memset_api_call
 from ansible.module_utils.memset import get_zone_id
 __metaclass__ = type
@@ -147,15 +147,18 @@ def create_or_delete(args, payload=dict()):
     api_method = 'dns.zone_list'
     _, _, response = memset_api_call(api_key=args['api_key'], api_method=api_method)
 
-    zone_exists, counter = check_zone(data=response, name=args['zone'])
+    zone_exists, _, counter, zone_id = get_zone_id(zone_name=args['zone'], current_zones=response.json())
 
     if not zone_exists:
         has_failed = True
         if counter == 0:
-            _stderr = "DNS zone '{}' does not exist." . format(args['zone'])
+            stderr = "DNS zone '{}' does not exist." . format(args['zone'])
         elif counter > 1:
-            _stderr = "{} matches multiple zones." . format(args['zone'])
-        module.fail_json(failed=has_failed, msg=_stderr, stderr=_stderr)
+            stderr = "{} matches multiple zones." . format(args['zone'])
+        retvals['failed'] = has_failed
+        retvals['msg'] = stderr
+        retvals['stderr'] = stderr
+        return(retvals)
     else:
         # get a list of all zones and find the zone's ID
         _, _, zone_response = memset_api_call(api_key=args['api_key'], api_method=api_method)
