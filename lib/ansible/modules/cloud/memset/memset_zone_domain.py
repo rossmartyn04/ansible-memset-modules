@@ -55,7 +55,7 @@ EXAMPLES = '''
 RETURN = '''
 memset_api:
   description: Domain info from the Memset API
-  returned: when state == present and Gcheck_mode
+  returned: when changed or state == present
   type: complex
   contains:
     domain:
@@ -90,7 +90,7 @@ def check(args, retvals=dict()):
 
 def create_or_delete_domain(args, retvals=dict()):
     has_changed, has_failed = False, False
-    msg, _stderr, _memset_api = None, None, None
+    msg, _stderr, memset_api = None, None, None
     payload = dict()
 
     # get the zones and check if the relevant zone exists
@@ -143,13 +143,14 @@ def create_or_delete_domain(args, retvals=dict()):
             has_failed, msg, response = memset_api_call(api_key=args['api_key'], api_method=api_method, payload=payload)
             if not has_failed:
                 has_changed = True
-                _memset_api = response.json()
+                memset_api = response.json()
 
     retvals['changed'] = has_changed
     retvals['failed'] = has_failed
-    retvals['msg'] = msg
-    if _memset_api is not None:
-        retvals['memset_api'] = _memset_api
+    if has_failed:
+        retvals['msg'] = msg
+    if memset_api is not None:
+        retvals['memset_api'] = memset_api
 
     return(retvals)
 
@@ -173,7 +174,7 @@ def main(args= dict()):
     # zone domain length must be less than 250 chars
     if len(args['domain']) > 250:
         stderr = 'Zone domain must be less than 250 characters in length.'
-        module.fail_json(failed=True, msg = _stderr, stderr=stderr)
+        module.fail_json(failed=True, msg=stderr, stderr=stderr)
 
     if module.check_mode:
         retvals = check(args)
