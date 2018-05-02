@@ -1,5 +1,5 @@
 ---
-- name: create domain with incorrect API key
+- name: create domain with invalid API key
   local_action:
     module: memset_zone_domain
     api_key: "wa9aerahhie0eekee9iaphoorovooyia"
@@ -9,10 +9,11 @@
   ignore_errors: true
   register: result
 
-- assert:
+- name: check API response with invalid API key
+  assert:
     that:
-      - result.failed
-      - "'ApiErrorForbidden' in result.stdout"
+      - result is failed
+      - "'API returned an error: 403' in result.stderr"
 
 - name: create domain over 250 chars
   local_action:
@@ -24,10 +25,11 @@
   ignore_errors: true
   register: result
 
-- assert:
+- name: test domain length is validated
+  assert:
     that:
-      - result.failed
-      - "'Zone domain must be less than 250 characters in length' in result.stdout"
+      - result is failed
+      - "'Zone domain must be less than 250 characters in length' in result.stderr"
 
 - name: create domain in non-existent zone
   local_action:
@@ -39,10 +41,11 @@
   ignore_errors: true
   register: result
 
-- assert:
+- name: fail if zone does not exist
+  assert:
     that:
-      - result.failed
-      - "'DNS zone \'non-existent-zone\' does not exist, cannot create domain.' in result.stdout"
+      - result is failed
+      - "'does not exist, cannot create domain.' in result.stderr"
 
 - name: create domain in non-unique zone
   local_action:
@@ -54,10 +57,11 @@
   ignore_errors: true
   register: result
 
-- assert:
+- name: fail if the zone is not unique
+  assert:
     that:
-      - result.failed
-      - "'ansible-tests-dupe-zone matches multiple zones, cannot create domain' in result.stdout"
+      - result is failed
+      - "'matches multiple zones, cannot create domain' in result.stderr"
 
 - name: test creating domain
   local_action:
@@ -69,10 +73,11 @@
   check_mode: true
   register: result
 
-- assert:
+- name: create domain with check mode
+  assert:
     that:
-      - result.changed
-      - result.check_mode == true
+      - result is changed
+      - result is successful
 
 - name: create domain
   local_action:
@@ -83,9 +88,11 @@
     zone: "{{ target_zone }}"
   register: result
 
-- assert:
+- name: create domain
+  assert:
     that:
-      - result.changed
+      - result is changed
+      - result is successful
 
 - name: create existing domain
   local_action:
@@ -96,9 +103,10 @@
     zone: "{{ target_zone }}"
   register: result
 
-- assert:
+- name: create existing domain
+  assert:
     that:
-      - not result.changed
+      - result is not changed
 
 - name: test deleting domain
   local_action:
@@ -110,10 +118,11 @@
   check_mode: true
   register: result
 
-- assert:
+- name: delete domain with check mode
+  assert:
     that:
-      - result.changed
-      - result.check_mode == true
+      - result is changed
+      - result is successful
 
 - name: delete domain
   local_action:
@@ -124,9 +133,10 @@
     zone: "{{ target_zone }}"
   register: result
 
-- assert:
+- name: delete domain
+  assert:
     that:
-      - result.changed
+      - result is changed
 
 - name: delete non-existent domain
   local_action:
@@ -137,6 +147,7 @@
     zone: "{{ target_zone }}"
   register: result
 
-- assert:
+- name: delete absent domain
+  assert:
     that:
-      - not result.changed
+      - result is not changed
