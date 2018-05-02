@@ -90,7 +90,7 @@ def check(args, retvals=dict()):
 
 def create_or_delete_domain(args, retvals=dict()):
     has_changed, has_failed = False, False
-    msg, _stderr, memset_api = None, None, None
+    msg, stderr, memset_api = None, None, None
     payload = dict()
 
     # get the zones and check if the relevant zone exists
@@ -144,13 +144,13 @@ def create_or_delete_domain(args, retvals=dict()):
             if not has_failed:
                 has_changed = True
                 memset_api = response.json()
+                msg = None
 
     retvals['changed'] = has_changed
     retvals['failed'] = has_failed
-    if has_failed:
-        retvals['msg'] = msg
-    if memset_api is not None:
-        retvals['memset_api'] = memset_api
+    for val in ['msg', 'stderr', 'memset_api']:
+        if val is not None:
+            retvals[val] = eval(val)
 
     return(retvals)
 
