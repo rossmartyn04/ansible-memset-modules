@@ -247,11 +247,9 @@ def create_or_delete(args, payload=dict()):
 
     retvals['changed'] = has_changed
     retvals['failed'] = has_failed
-    if memset_api is not None:
-        retvals['memset_api'] = memset_api
-    if msg is not None:
-        retvals['msg'] = msg
-        # retvals['stderr'] = msg
+    for val in ['msg', 'stderr', 'memset_api']:
+        if val is not None:
+            retvals[val] = eval(val)
 
     return(retvals)
 
