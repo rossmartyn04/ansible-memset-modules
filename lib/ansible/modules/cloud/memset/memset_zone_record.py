@@ -160,24 +160,25 @@ def create_or_delete(args, payload=dict()):
         retvals['stderr'] = stderr
         return(retvals)
     else:
+        # we already have the zone's ID from above
         # get a list of all zones and find the zone's ID
-        _, _, zone_response = memset_api_call(api_key=args['api_key'], api_method=api_method)
-        for zone in zone_response.json():
-            if zone['nickname'] == args['zone']:
-                break
+        # _, _, zone_response = memset_api_call(api_key=args['api_key'], api_method=api_method)
+        # for zone in zone_response.json():
+        #     if zone['nickname'] == args['zone']:
+        #         break
 
         # get a list of all records ( as we can't limit records by zone)
         api_method = 'dns.zone_record_list'
-        _, _, record_list = memset_api_call(api_key=args['api_key'], api_method=api_method)
+        _, _, response = memset_api_call(api_key=args['api_key'], api_method=api_method)
 
         # find any matching records
-        records = [record for record in record_list.json() if record['zone_id'] == zone['id']
+        records = [record for record in response.json() if record['zone_id'] == zone_id
                    and record['record'] == args['record'] and record['type'] == args['type']]
 
         if args['state'] == 'present':
             # assemble the new record
             new_record = dict()
-            new_record['zone_id'] = zone['id']
+            new_record['zone_id'] = zone_id
             new_record['priority'] = args['priority']
             new_record['address'] = args['address']
             new_record['relative'] = args['relative']
@@ -191,6 +192,7 @@ def create_or_delete(args, payload=dict()):
                     # record exists, add ID to payload
                     new_record['id'] = zone_record['id']
                     if zone_record == new_record:
+                        # nothing to do; record is already correct
                         retvals['changed'] = has_changed
                         retvals['failed'] = has_failed
                         retvals['memset_api'] = zone_record
@@ -202,14 +204,14 @@ def create_or_delete(args, payload=dict()):
                         api_method = 'dns.zone_record_update'
                         if args['check_mode']:
                             retvals['changed'] = True
-                            retvals['failed'] = has_failed
-                            retvals['memset_api'] = zone_record
+                            # return the new record
+                            retvals['memset_api'] = new_record
                             return(retvals)
-                            # return(has_changed, has_failed, msg, response)
                         has_failed, msg, response = memset_api_call(api_key=args['api_key'], api_method=api_method, payload=payload)
                         if not has_failed:
                             has_changed = True
                             memset_api = new_record
+                            # empty msg as we don't want to return a boatload of json to the user
                             msg = None
             else:
                 # no record found, so we need to create it
@@ -217,12 +219,14 @@ def create_or_delete(args, payload=dict()):
                 payload = new_record
                 if args['check_mode']:
                     retvals['changed'] = True
+                    retvals['failed'] = has_failed
                     retvals['memset_api'] = new_record
                     return(retvals)
                 has_failed, msg, response = memset_api_call(api_key=args['api_key'], api_method=api_method, payload=payload)
                 if not has_failed:
                     has_changed = True
                     memset_api = new_record
+                    #  empty msg as we don't want to return a boatload of json to the user
                     msg = None
 
         if args['state'] == 'absent':
@@ -238,20 +242,16 @@ def create_or_delete(args, payload=dict()):
                     if not has_failed:
                         has_changed = True
                         memset_api = zone_record
+                        #  empty msg as we don't want to return a boatload of json to the user
                         msg = None
-    else:
-        if args['state'] == 'present':
-            has_failed = True
-            msg = 'Zone must exist before records are created'
-        if args['state'] == 'absent':
-            has_changed = False
 
     retvals['changed'] = has_changed
     retvals['failed'] = has_failed
-    retvals['memset_api'] = memset_api
+    if memset_api is not None:
+        retvals['memset_api'] = memset_api
     if msg is not None:
         retvals['msg'] = msg
-        retvals['stderr'] = msg
+        # retvals['stderr'] = msg
 
     return(retvals)
 
@@ -263,8 +263,8 @@ def main(args=dict()):
             state=dict(required=True, choices=['present', 'absent'], type='str'),
             api_key=dict(required=True, type='str', no_log=True),
             zone=dict(required=True, type='str'),
-            type=dict(required=True, aliases=['type'], choices=['A', 'AAAA', 'CNAME', 'MX', 'NS', 'SRV', 'TXT'], type='str'),
-            data=dict(required=True, aliases=['ip'], type='str'),
+            type=dict(required=True, choices=['A', 'AAAA', 'CNAME', 'MX', 'NS', 'SRV', 'TXT'], type='str'),
+            address=dict(required=True, aliases=['ip', 'data'], type='str'),
             record=dict(required=False, default='', type='str'),
             ttl=dict(required=False, default=0, choices=[0, 300, 600, 900, 1800, 3600, 7200, 10800, 21600, 43200, 86400], type='int'),
             priority=dict(required=False, default=0, type='int'),
@@ -278,15 +278,37 @@ def main(args=dict()):
     args['zone'] = module.params['zone']
     args['type'] = module.params['type']
     args['record'] = module.params['record']
-    args['address'] = module.params['data']
+    args['address'] = module.params['address']
     args['priority'] = module.params['priority']
     args['relative'] = module.params['relative']
     args['ttl'] = module.params['ttl']
     args['check_mode'] = module.check_mode
 
-    if args['priority']:
-        if not 0 <= args['priority'] <= 999:
-            module.fail_json(failed=True, stderr='Priority must be in the range 0 > 999 (inclusive).')
+    # perform some Memset API-specific validation
+    # https://www.memset.com/apidocs/methods_dns.html#dns.zone_record_create
+    failed_validation = False
+
+    # priority can only be integer 0 > 999
+    if not 0 <= args['priority'] <= 999:
+        failed_validation = True
+        error = 'Priority must be in the range 0 > 999 (inclusive).'
+    # data value must be max 250 chars
+    if len(args['address']) > 250:
+        failed_validation = True
+        error = "Data must be less than 250 characters in length."
+    # record value must be max 250 chars
+    if args['record']:
+        if len(args['record']) > 63:
+            failed_validation = True
+            error = "Record must be less than 63 characters in length."
+    # relative isn't used for all record types
+    if args['relative']:
+        if args['type'] not in ['CNAME', 'MX', 'NS', 'SRV']:
+            failed_validation = True
+            error = "Relative is only valid for CNAME, MX, NS and SRV record types"
+    # if any of the above failed then fail early
+    if failed_validation:
+        module.fail_json(failed=True, msg=error, stderr=error)
 
     retvals = create_or_delete(args)
 
