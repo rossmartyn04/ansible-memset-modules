@@ -57,7 +57,7 @@
 - assert:
     that:
       - result.failed
-      - "'non-existent-zone matches multiple zones, cannot create domain' in result.stdout"
+      - "'ansible-tests-dupe-zone matches multiple zones, cannot create domain' in result.stdout"
 
 - name: test creating domain
   local_action:
