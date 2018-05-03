@@ -27,6 +27,11 @@ notes:
 description:
     - Manage DNS zones. These form the basis of grouping similar domains together.
 options:
+    state:
+        required: true
+        description:
+            - Indicates desired state of resource.
+        choices: [ absent, present ]
     api_key:
         required: true
         description:
@@ -36,11 +41,13 @@ options:
         description:
             - The zone nickname; usually the same as the main domain. Ensure this
               value has at most 250 characters.
+        aliases: [ nickname ]
     ttl:
         required: false
         description:
             - The default TTL for all records created in the zone. This must be a
               valid int from https://www.memset.com/apidocs/methods_dns.html#dns.zone_create
+        choices: [ 0, 300, 600, 900, 1800, 3600, 7200, 10800, 21600, 43200, 86400 ]
     force:
         required: false
         description:

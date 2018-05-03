@@ -27,14 +27,20 @@ notes:
 description:
     - Manage individual zone records.
 options:
+    state:
+        required: true
+        description:
+            - Indicates desired state of resource.
+        choices: [ absent, present ]
     api_key:
         required: true
         description:
             - The API key obtained from the Memset control panel
-    data:
+    address:
         required: true
         description:
             - The address for this record (can be IP or text string depending on record type)
+        aliases: [ ip, data ]
     priority:
         required: false
         description:
@@ -43,11 +49,12 @@ options:
         required: false
         description:
             - The subdomain to create
-    record_type:
+    type:
         required: true
         description:
             - The type of DNS record to create. Must be one of -
               'A', 'AAAA', 'CNAME', 'MX', 'NS', 'SRV', 'TXT'
+        choices: [ A, AAAA, CNAME, MX, NS, SRV, TXT ]
     relative:
         required: false
         description:
@@ -62,7 +69,7 @@ options:
     zone:
         required: true
         description:
-            - The name of the zone to add this record to
+            - The name of the zone to which to add the record to.
 '''
 
 EXAMPLES = '''
