@@ -1,7 +1,10 @@
 #!/usr/bin/env python
 
-import requests
-
+try:
+    import requests
+    requests_found = True
+except ImportError:
+    requests_found = False
 
 def memset_api_call(api_key, api_method, payload=None):
     '''
