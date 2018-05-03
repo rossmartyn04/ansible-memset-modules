@@ -27,15 +27,20 @@ notes:
 description:
     - Manage DNS zone domains. These form the basis of grouping similar domains together.
 options:
+    state:
+        required: true
+        description:
+            - Indicates desired state of resource.
+        choices: [ absent, present ]
     api_key:
         required: true
         description:
             - The API key obtained from the Memset control panel
     domain:
         required: true
-        aliases: ['name']
         description:
             - The zone domain name. Ensure this value has at most 250 characters.
+        aliases: ['name']
     zone:
         required: true
         description:
@@ -166,7 +171,7 @@ def main():
     global module
     module = AnsibleModule(
         argument_spec=dict(
-            state=dict(required=False, default='present', choices=['present', 'absent'], type='str'),
+            state=dict(required=True, choices=['present', 'absent'], type='str'),
             api_key=dict(required=True, type='str', no_log=True),
             domain=dict(required=True, aliases=['name'], type='str'),
             zone=dict(required=True, type='str')
