@@ -21,7 +21,7 @@ notes:
   - DNS reload requests are a best-effort service provided by Memset; these generally
     happen every 15 minutes by default, however you can request an immediate reload if
     later tasks rely on the records being created. An API key generated via the
-    Memset customer control panel is required with the following minimum scope:
+    Memset customer control panel is required with the following minimum scope -
     `dns.reload`. If you wish to poll the job status to wait until the reload has
     completed, then `job.status` is also required.
 description:

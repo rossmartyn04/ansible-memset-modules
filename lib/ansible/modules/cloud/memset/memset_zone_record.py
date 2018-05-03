@@ -21,7 +21,7 @@ short_description: Manage zone records
 notes:
   - Zones can be thought of as a logical group of domains, all of which share the
     same DNS records (i.e. they point to the same IP). An API key generated via the
-    Memset customer control panel is needed with the following minimum scope:
+    Memset customer control panel is needed with the following minimum scope -
     `dns.zone_create`, `dns.zone_delete`, `dns.zone_list`.
 description:
     - Manage individual zone records.
@@ -36,7 +36,7 @@ options:
             - The address for this record (can be IP or text string depending on record type)
     priority:
         required: false
-        description;
+        description:
             - SRV/TXT record priority, in the range 0 > 999 (inclusive)
     record:
         required: false
@@ -45,7 +45,7 @@ options:
     record_type:
         required: true
         description:
-            - The type of DNS record to create. Must be one of:
+            - The type of DNS record to create. Must be one of -
               'A', 'AAAA', 'CNAME', 'MX', 'NS', 'SRV', 'TXT'
     relative:
         required: false
@@ -56,7 +56,7 @@ options:
         required: false
         description:
             - The record's TTL in seconds (will inherit zone's TTL if not explicitly set).
-              This must be one of: 0, 300, 600, 900, 1800, 3600, 7200, 10800, 21600, 43200, 86400
+              This must be one of - 0, 300, 600, 900, 1800, 3600, 7200, 10800, 21600, 43200, 86400
               (where 0 implies inheritance from the zone)
     zone:
         required: true
@@ -67,7 +67,7 @@ options:
 EXAMPLES = '''
 # Create DNS record for www.domain.com
 - name: create DNS record
-  memset_zone_record
+  memset_zone_record:
     api_key: dcf089a2896940da9ffefb307ef49ccd
     state: present
     zone: domain.com
@@ -80,7 +80,7 @@ EXAMPLES = '''
 
 # create an SPF record for domain.com
 - name: create SPF record for domain.com
-  memset_zone_record
+  memset_zone_record:
     api_key: dcf089a2896940da9ffefb307ef49ccd
     state: present
     zone: domain.com

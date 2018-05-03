@@ -21,7 +21,7 @@ short_description: Manage zone domains
 notes:
   - Zone domains can be thought of as a collection of domains, all of which share the
     same DNS records (i.e. they point to the same IP). An API key generated via the
-    Memset customer control panel is needed with the following minimum scope:
+    Memset customer control panel is needed with the following minimum scope -
     `dns.zone_domain_create`, `dns.zone_domain_delete`, `dns.zone_domain_list`.
 description:
     - Manage DNS zone domains. These form the basis of grouping similar domains together.
@@ -44,7 +44,7 @@ options:
 EXAMPLES = '''
 # Create the zone domain 'test.com'
 - name: create zone domain
-  memset_zone_domain
+  memset_zone_domain:
     domain: test.com
     zone: testzone
     state: present
