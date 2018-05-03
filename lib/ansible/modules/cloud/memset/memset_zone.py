@@ -1,13 +1,14 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
+#
+# Copyright (c) 2018, Simon Weald <ansible@simonweald.com>
+# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import (absolute_import, division, print_function)
-from ansible.module_utils.memset import check_zone
-from ansible.module_utils.memset import get_zone_id
-from ansible.module_utils.memset import memset_api_call
 __metaclass__ = type
 
 ANSIBLE_METADATA = {
-    'metadata_version': '1.0',
+    'metadata_version': '1.1',
     'status': ['preview'],
     'supported_by': 'community'
 }
@@ -16,7 +17,7 @@ DOCUMENTATION = '''
 ---
 module: memset_zone
 author: "Simon Weald (@analbeard)"
-version_added: "2.5"
+version_added: "2.6"
 short_description: Manage zones
 notes:
   - Zones can be thought of as a logical group of domains, all of which share the
@@ -99,8 +100,12 @@ memset_api:
       sample: 300
 '''
 
+from ansible.module_utils.memset import check_zone
+from ansible.module_utils.memset import get_zone_id
+from ansible.module_utils.memset import memset_api_call
 
-def check(args):
+
+def check(args=None):
     # get the zones and check if the relevant zone exists
     retvals = dict()
 
@@ -115,12 +120,12 @@ def check(args):
     retvals['changed'] = has_changed
     retvals['failed'] = has_failed
     retvals['memset_api'] = response.json()
-    retvals['msg'] = 'Zone "{}" exists: {}' . format(args['name'], str(zone_exists))
+    retvals['msg'] = 'Zone "{0}" exists: {1}' . format(args['name'], str(zone_exists))
 
     return(retvals)
 
 
-def create_or_delete(args):
+def create_or_delete(args=None):
     retvals = dict()
     has_failed, has_changed = False, False
     msg, memset_api, _stderr = None, None, None
@@ -198,7 +203,7 @@ def create_or_delete(args):
     return(retvals)
 
 
-def main(args=dict()):
+def main():
     global module
     module = AnsibleModule(
         argument_spec=dict(
@@ -211,6 +216,7 @@ def main(args=dict()):
         supports_check_mode=True
     )
 
+    args = dict()
     args['state'] = module.params['state']
     args['api_key'] = module.params['api_key']
     args['name'] = module.params['name']

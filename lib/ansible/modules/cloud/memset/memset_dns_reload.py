@@ -1,12 +1,14 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
+#
+# Copyright (c) 2018, Simon Weald <ansible@simonweald.com>
+# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import (absolute_import, division, print_function)
-from time import sleep
-from ansible.module_utils.memset import memset_api_call
 __metaclass__ = type
 
 ANSIBLE_METADATA = {
-    'metadata_version': '1.0',
+    'metadata_version': '1.1',
     'status': ['preview'],
     'supported_by': 'community'
 }
@@ -15,7 +17,7 @@ DOCUMENTATION = '''
 ---
 module: memset_dns_reload
 author: "Simon Weald (@analbeard)"
-version_added: "2.5"
+version_added: "2.6"
 short_description: Request reload of Memset's DNS infrastructure
 notes:
   - DNS reload requests are a best-effort service provided by Memset; these generally
@@ -81,8 +83,11 @@ memset_api:
       sample: "dns"
 '''
 
+from time import sleep
+from ansible.module_utils.memset import memset_api_call
 
-def reload_dns(args):
+
+def reload_dns(args=None):
     retvals, payload = dict(), dict()
     has_changed, has_failed = False, False
     memset_api, msg = None, None
@@ -126,7 +131,7 @@ def reload_dns(args):
     return(retvals)
 
 
-def main(args=dict()):
+def main():
     global module
     module = AnsibleModule(
         argument_spec=dict(
@@ -136,6 +141,7 @@ def main(args=dict()):
         supports_check_mode=False
     )
 
+    args = dict()
     args['api_key'] = module.params['api_key']
     args['poll'] = module.params['poll']
 
