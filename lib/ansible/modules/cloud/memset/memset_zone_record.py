@@ -1,13 +1,14 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
+#
+# Copyright (c) 2018, Simon Weald <ansible@simonweald.com>
+# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import (absolute_import, division, print_function)
-from ansible.module_utils.memset import get_zone_id
-from ansible.module_utils.memset import memset_api_call
-from ansible.module_utils.memset import get_zone_id
 __metaclass__ = type
 
 ANSIBLE_METADATA = {
-    'metadata_version': '1.0',
+    'metadata_version': '1.1',
     'status': ['preview'],
     'supported_by': 'community'
 }
@@ -16,7 +17,7 @@ DOCUMENTATION = '''
 ---
 module: memset_zone_record
 author: "Simon Weald (@analbeard)"
-version_added: "2.5"
+version_added: "2.6"
 short_description: Manage zone records
 notes:
   - Zones can be thought of as a logical group of domains, all of which share the
@@ -136,6 +137,10 @@ memset_api:
       type: string
       sample: "b0bb1ce851aeea6feeb2dc32fe83bf9c"
 '''
+
+from ansible.module_utils.memset import get_zone_id
+from ansible.module_utils.memset import memset_api_call
+from ansible.module_utils.memset import get_zone_id
 
 
 def create_or_delete(args=None):
