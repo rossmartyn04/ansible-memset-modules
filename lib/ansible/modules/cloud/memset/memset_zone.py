@@ -100,7 +100,7 @@ memset_api:
 '''
 
 
-def check(args):
+def check(args=None):
     # get the zones and check if the relevant zone exists
     retvals = dict()
 
@@ -115,12 +115,12 @@ def check(args):
     retvals['changed'] = has_changed
     retvals['failed'] = has_failed
     retvals['memset_api'] = response.json()
-    retvals['msg'] = 'Zone "{}" exists: {}' . format(args['name'], str(zone_exists))
+    retvals['msg'] = 'Zone "{0}" exists: {1}' . format(args['name'], str(zone_exists))
 
     return(retvals)
 
 
-def create_or_delete(args):
+def create_or_delete(args=None):
     retvals = dict()
     has_failed, has_changed = False, False
     msg, memset_api, _stderr = None, None, None
@@ -198,7 +198,7 @@ def create_or_delete(args):
     return(retvals)
 
 
-def main(args=dict()):
+def main():
     global module
     module = AnsibleModule(
         argument_spec=dict(
@@ -211,6 +211,7 @@ def main(args=dict()):
         supports_check_mode=True
     )
 
+    args = dict()
     args['state'] = module.params['state']
     args['api_key'] = module.params['api_key']
     args['name'] = module.params['name']

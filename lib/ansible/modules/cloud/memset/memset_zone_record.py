@@ -138,9 +138,10 @@ memset_api:
 '''
 
 
-def create_or_delete(args, payload=dict()):
+def create_or_delete(args=None):
     has_failed, has_changed = False, False
     msg, memset_api, stderr = None, None, None
+    payload = dict()
     retvals = dict()
 
     # get the zones and check if the relevant zone exists
@@ -254,7 +255,7 @@ def create_or_delete(args, payload=dict()):
     return(retvals)
 
 
-def main(args=dict()):
+def main():
     global module
     module = AnsibleModule(
         argument_spec=dict(
@@ -271,6 +272,7 @@ def main(args=dict()):
         supports_check_mode=True
     )
 
+    args = dict()
     args['state'] = module.params['state']
     args['api_key'] = module.params['api_key']
     args['zone'] = module.params['zone']

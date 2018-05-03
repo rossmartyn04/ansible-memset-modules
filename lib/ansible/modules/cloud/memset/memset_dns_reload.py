@@ -82,7 +82,7 @@ memset_api:
 '''
 
 
-def reload_dns(args):
+def reload_dns(args=None):
     retvals, payload = dict(), dict()
     has_changed, has_failed = False, False
     memset_api, msg = None, None
@@ -126,7 +126,7 @@ def reload_dns(args):
     return(retvals)
 
 
-def main(args=dict()):
+def main():
     global module
     module = AnsibleModule(
         argument_spec=dict(
@@ -136,6 +136,7 @@ def main(args=dict()):
         supports_check_mode=False
     )
 
+    args = dict()
     args['api_key'] = module.params['api_key']
     args['poll'] = module.params['poll']
 
