@@ -22,7 +22,7 @@ def memset_api_call(api_key, api_method, payload=None):
     has_failed = False
     response, msg = None, None
     api_uri_base = 'https://api.memset.com/v1/json/'
-    api_uri = '{}{}/' . format(api_uri_base, api_method)
+    api_uri = '{0}{1}/' . format(api_uri_base, api_method)
 
     # make the request and capture any error to be returned
     # in the correct Ansible way.
@@ -54,12 +54,14 @@ def check_zone_domain(data, domain):
     '''
     Returns true if domain already exists, and false if not.
     '''
+    exists = False
+
     if data.status_code in [201, 200]:
         for zone_domain in data.json():
             if zone_domain['domain'] == domain:
-                return True
-        else:
-            return False
+                exists = True
+
+    return(exists)
 
 
 def check_zone(data, name):
