@@ -154,7 +154,8 @@ def create_or_delete_domain(args, retvals=dict()):
 
     return(retvals)
 
-def main(args= dict()):
+
+def main(args=dict()):
     global module
     module = AnsibleModule(
         argument_spec=dict(
