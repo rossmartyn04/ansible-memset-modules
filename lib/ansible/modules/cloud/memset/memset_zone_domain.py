@@ -126,12 +126,13 @@ def create_or_delete_domain(args=None):
         retvals['failed'] = has_failed
         retvals['msg'] = stderr
         retvals['stderr'] = stderr
+
         return(retvals)
 
     if args['state'] == 'present':
         # making it this far means we have a unique zone to use
         api_method = 'dns.zone_domain_list'
-        _, _, response = memset_api_call(api_key=args['api_key'], api_method=api_method)
+        _has_failed, _msg, response = memset_api_call(api_key=args['api_key'], api_method=api_method)
         for zone_domain in response.json():
             if zone_domain['domain'] == args['domain']:
                 # zone domain already exists, nothing to change
@@ -147,7 +148,7 @@ def create_or_delete_domain(args=None):
                 has_changed = True
     if args['state'] == 'absent':
         api_method = 'dns.zone_domain_list'
-        _, _, response = memset_api_call(api_key=args['api_key'], api_method=api_method)
+        _has_failed, _msg, response = memset_api_call(api_key=args['api_key'], api_method=api_method)
         domain_exists = check_zone_domain(data=response, domain=args['domain'])
         if domain_exists:
             api_method = 'dns.zone_domain_delete'
@@ -200,7 +201,7 @@ def main():
             payload = dict()
             payload['domain'] = args['domain']
             api_method = 'dns.zone_domain_info'
-            _, _, response = memset_api_call(api_key=args['api_key'], api_method=api_method, payload=payload)
+            _has_failed, _msg, response = memset_api_call(api_key=args['api_key'], api_method=api_method, payload=payload)
             retvals['memset_api'] = response.json()
 
     if retvals['failed']:

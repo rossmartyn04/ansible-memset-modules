@@ -117,7 +117,7 @@ def check(args=None):
     retvals = dict()
 
     api_method = 'dns.zone_list'
-    has_failed, _, response = memset_api_call(api_key=args['api_key'], api_method=api_method)
+    has_failed, _msg, response = memset_api_call(api_key=args['api_key'], api_method=api_method)
 
     zone_exists, counter = check_zone(data=response, name=args['name'])
 
@@ -140,9 +140,10 @@ def create_or_delete(args=None):
 
     # get the zones and check if the relevant zone exists
     api_method = 'dns.zone_list'
-    _, _, response = memset_api_call(api_key=args['api_key'], api_method=api_method)
+    _has_failed, _msg, response = memset_api_call(api_key=args['api_key'], api_method=api_method)
 
-    zone_exists, counter = check_zone(data=response, name=args['name'])
+    # zone_exists, counter = check_zone(data=response, name=args['name'])
+    zone_exists, _msg, counter, _zone_id = get_zone_id(zone_name=args['name'], current_zones=response.json())
 
     if args['state'] == 'present':
         if not zone_exists:
@@ -153,7 +154,7 @@ def create_or_delete(args=None):
             if not has_failed:
                 has_changed = True
         else:
-            _, _, response = memset_api_call(api_key=args['api_key'], api_method=api_method, payload=payload)
+            _has_failed, _msg, response = memset_api_call(api_key=args['api_key'], api_method=api_method, payload=payload)
             for zone in response.json():
                 if zone['nickname'] == args['name']:
                     break
@@ -166,19 +167,19 @@ def create_or_delete(args=None):
                     has_changed = True
         # populate return var with zone info
         api_method = 'dns.zone_list'
-        _, _, response = memset_api_call(api_key=args['api_key'], api_method=api_method)
+        _has_failed, _msg, response = memset_api_call(api_key=args['api_key'], api_method=api_method)
         zone_exists, msg, counter, zone_id = get_zone_id(zone_name=args['name'], current_zones=response.json())
         if zone_exists:
             payload = dict()
             payload['id'] = zone_id
             api_method = 'dns.zone_info'
-            _, _, response = memset_api_call(api_key=args['api_key'], api_method=api_method, payload=payload)
-            retvals['memset_api'] = response.json()
+            _has_failed, _msg, response = memset_api_call(api_key=args['api_key'], api_method=api_method, payload=payload)
+            memset_api = response.json()
         else:
-            retvals['msg'] = msg
+            msg = msg
     if args['state'] == 'absent':
         if zone_exists:
-            _, _, response = memset_api_call(api_key=args['api_key'], api_method=api_method, payload=payload)
+            _has_failed, _msg, response = memset_api_call(api_key=args['api_key'], api_method=api_method, payload=payload)
             counter = 0
             for zone in response.json():
                 if zone['nickname'] == args['name']:
@@ -190,9 +191,9 @@ def create_or_delete(args=None):
                         domain_count = len(zone['domains'])
                         record_count = len(zone['records'])
                 if (domain_count > 0 or record_count > 0) and args['force'] is False:
-                    _stderr = 'Zone contains domains or records and force was not used.'
+                    stderr = 'Zone contains domains or records and force was not used.'
                     has_failed, has_changed = True, False
-                    module.fail_json(failed=has_failed, changed=has_changed, msg=msg, stderr=_stderr, rc=1)
+                    module.fail_json(failed=has_failed, changed=has_changed, msg=msg, stderr=stderr, rc=1)
                 api_method = 'dns.zone_delete'
                 payload['id'] = zone_id
                 has_failed, msg, response = memset_api_call(api_key=args['api_key'], api_method=api_method, payload=payload)
@@ -200,12 +201,15 @@ def create_or_delete(args=None):
                     has_changed = True
             else:
                 has_failed, has_changed = True, False
-                retvals['msg'] = 'Unable to delete zone as multiple zones with the same name exist.'
+                msg = 'Unable to delete zone as multiple zones with the same name exist.'
         else:
             has_failed, has_changed = False, False
 
     retvals['failed'] = has_failed
     retvals['changed'] = has_changed
+    for val in ['msg', 'stderr', 'memset_api']:
+        if val is not None:
+            retvals[val] = eval(val)
 
     return(retvals)
 
