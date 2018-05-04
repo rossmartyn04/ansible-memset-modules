@@ -158,9 +158,9 @@ def create_or_delete(args=None):
 
     # get the zones and check if the relevant zone exists
     api_method = 'dns.zone_list'
-    _, _, response = memset_api_call(api_key=args['api_key'], api_method=api_method)
+    _has_failed, _msg, response = memset_api_call(api_key=args['api_key'], api_method=api_method)
 
-    zone_exists, _, counter, zone_id = get_zone_id(zone_name=args['zone'], current_zones=response.json())
+    zone_exists, _msg, counter, zone_id = get_zone_id(zone_name=args['zone'], current_zones=response.json())
 
     if not zone_exists:
         has_failed = True
@@ -173,16 +173,9 @@ def create_or_delete(args=None):
         retvals['stderr'] = stderr
         return(retvals)
     else:
-        # we already have the zone's ID from above
-        # get a list of all zones and find the zone's ID
-        # _, _, zone_response = memset_api_call(api_key=args['api_key'], api_method=api_method)
-        # for zone in zone_response.json():
-        #     if zone['nickname'] == args['zone']:
-        #         break
-
         # get a list of all records ( as we can't limit records by zone)
         api_method = 'dns.zone_record_list'
-        _, _, response = memset_api_call(api_key=args['api_key'], api_method=api_method)
+        _has_failed, _msg, response = memset_api_call(api_key=args['api_key'], api_method=api_method)
 
         # find any matching records
         records = [record for record in response.json() if record['zone_id'] == zone_id
