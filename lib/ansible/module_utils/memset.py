@@ -6,6 +6,7 @@ try:
 except ImportError:
     requests_found = False
 
+
 def memset_api_call(api_key, api_method, payload=None):
     '''
     Generic function which returns results back to calling function.
