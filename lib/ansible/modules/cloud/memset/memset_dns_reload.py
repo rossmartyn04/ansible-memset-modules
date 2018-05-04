@@ -90,10 +90,9 @@ from ansible.module_utils.memset import memset_api_call
 def reload_dns(args=None):
     retvals, payload = dict(), dict()
     has_changed, has_failed = False, False
-    memset_api, msg = None, None
+    memset_api, msg, stderr = None, None, None
 
     api_method = 'dns.reload'
-
     has_failed, msg, response = memset_api_call(api_key=args['api_key'], api_method=api_method)
 
     if has_failed:
@@ -105,28 +104,28 @@ def reload_dns(args=None):
     if args['poll']:
         payload['id'] = response.json()['id']
         api_method = 'job.status'
-
-        _, _, response = memset_api_call(api_key=args['api_key'], api_method=api_method, payload=payload)
+        _has_failed, _msg, response = memset_api_call(api_key=args['api_key'], api_method=api_method, payload=payload)
 
         while not response.json()['finished']:
             counter = 0
             while counter < 6:
                 sleep(5)
-                _, msg, response = memset_api_call(api_key=args['api_key'], api_method=api_method, payload=payload)
+                _has_failed, msg, response = memset_api_call(api_key=args['api_key'], api_method=api_method, payload=payload)
                 counter += 1
         if response.json()['error']:
-            module.fail_json(failed=True, msg=msg, stderr='Memset API returned job error', memset_api=response.json())
+            # the reload job was submitted but polling failed. Don't return this as an overall task failure
+            stderr = "DNS reload submitted, but the Memset API returned a job error when attempting to poll the reload status."
+            msg = msg
         else:
-            retvals['memset_api'] = response.json()
+            memset_api = response.json()
             has_changed = True
 
     # assemble return variables
     retvals['has_failed'] = has_failed
     retvals['has_changed'] = has_changed
-    if msg is None:
-        retvals['msg'] = msg
-    if memset_api is None:
-        retvals['memset_api'] = msg
+    for val in ['msg', 'stderr', 'memset_api']:
+        if val is not None:
+            retvals[val] = eval(val)
 
     return(retvals)
 
