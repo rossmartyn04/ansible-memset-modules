@@ -158,7 +158,13 @@ def create_or_delete(args=None):
 
     # get the zones and check if the relevant zone exists
     api_method = 'dns.zone_list'
-    _has_failed, _msg, response = memset_api_call(api_key=args['api_key'], api_method=api_method)
+    _has_failed, msg, response = memset_api_call(api_key=args['api_key'], api_method=api_method)
+
+    if _has_failed:
+        retvals['failed'] = _has_failed
+        retvals['msg'] = msg
+        retvals['stderr'] = "API returned an error: {0}" . format(response.status_code)
+        return(retvals)
 
     zone_exists, _msg, counter, zone_id = get_zone_id(zone_name=args['zone'], current_zones=response.json())
 
