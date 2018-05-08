@@ -319,7 +319,7 @@ def main():
             error = "Relative is only valid for CNAME, MX, NS and SRV record types"
     # if any of the above failed then fail early
     if failed_validation:
-        module.fail_json(failed=True, msg=error, stderr=error)
+        module.fail_json(failed=True, msg=error)
 
     retvals = create_or_delete(args)
 
