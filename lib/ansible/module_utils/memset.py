@@ -55,19 +55,17 @@ def memset_api_call(api_key, api_method, payload=None):
 
     # make the request and capture any error to be returned
     # in the correct Ansible way.
+    error_codes = [400, 403, 404, 412, 500, 503]
+
     try:
         response = requests.post(api_uri, data=payload)
     except Exception as e:
         has_failed = True
         msg = e
     else:
-        if response.status_code in [400, 403, 404, 412]:
-            # the human made an error
+        if response.status_code in error_codes:
             has_failed = True
-        elif response.status_code in [500, 503]:
-            # Memset's API isn't happy
-            has_failed = True
-            msg = "Internal server error"
+            msg = "Memset API returned a {0} response ({1}, {2})" . format(response.status_code, response.json()['error_type'], response.json()['error'])
         elif response.status_code in [201, 200]:
             pass
 
