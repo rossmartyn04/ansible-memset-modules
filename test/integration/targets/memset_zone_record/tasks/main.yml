@@ -1,0 +1,15 @@
+- name: create record with incorrect API key
+  local_action:
+    module: memset_zone_record
+    api_key: "wa9aerahhie0eekee9iaphoorovooyia"
+    state: present
+    zone: "{{ test_zone }}"
+    type: A
+    address: 127.0.0.1
+  ignore_errors: true
+  register: result
+
+- assert:
+    that:
+      - "'Memset API returned a 403 response (ApiErrorForbidden, Bad api_key)' in result.msg"
+      - result is not successful
