@@ -216,6 +216,7 @@ def create_or_delete(args=None):
                         api_method = 'dns.zone_record_update'
                         if args['check_mode']:
                             retvals['changed'] = True
+                            retvals['failed'] = has_failed
                             # return the new record
                             retvals['memset_api'] = new_record
                             return(retvals)
@@ -247,6 +248,7 @@ def create_or_delete(args=None):
                 for zone_record in records:
                     if args['check_mode']:
                         retvals['changed'] = True
+                        retvals['failed'] = has_failed
                         return(retvals)
                     payload['id'] = zone_record['id']
                     api_method = 'dns.zone_record_delete'
