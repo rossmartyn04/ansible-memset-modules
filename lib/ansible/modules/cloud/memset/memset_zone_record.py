@@ -171,7 +171,7 @@ def create_or_delete(args=None):
     if not zone_exists:
         has_failed = True
         if counter == 0:
-            stderr = "DNS zone '{0}' does not exist." . format(args['zone'])
+            stderr = "DNS zone {0} does not exist." . format(args['zone'])
         elif counter > 1:
             stderr = "{0} matches multiple zones." . format(args['zone'])
         retvals['failed'] = has_failed
