@@ -1,4 +1,4 @@
 ---
 test_domain: ansible.example.com
-target_zone: ansible-integration-tests
-duplicate_zone: ansible-tests-dupe-zone
+target_zone: ansible-dns-tests
+duplicate_zone: ansible-dns-tests-dupe

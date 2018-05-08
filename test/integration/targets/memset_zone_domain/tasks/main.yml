@@ -12,8 +12,8 @@
 - name: check API response with invalid API key
   assert:
     that:
-      - result is failed
-      - "'API returned an error: 403' in result.stderr"
+      - "'Memset API returned a 403 response (ApiErrorForbidden, Bad api_key)' in result.msg"
+      - result is not successful
 
 - name: create domain over 250 chars
   local_action:
