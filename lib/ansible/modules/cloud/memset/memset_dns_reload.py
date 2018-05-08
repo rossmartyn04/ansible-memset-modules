@@ -96,7 +96,7 @@ def reload_dns(args=None):
     has_failed, msg, response = memset_api_call(api_key=args['api_key'], api_method=api_method)
 
     if has_failed:
-        retvals['has_failed'] = has_failed
+        retvals['failed'] = has_failed
         retvals['memset_api'] = response.json()
         retvals['msg'] = msg
         return(retvals)
