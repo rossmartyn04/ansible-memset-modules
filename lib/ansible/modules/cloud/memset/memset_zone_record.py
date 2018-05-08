@@ -306,7 +306,7 @@ def main():
     # data value must be max 250 chars
     if len(args['address']) > 250:
         failed_validation = True
-        error = "Data must be less than 250 characters in length."
+        error = "Address must be less than 250 characters in length."
     # record value must be max 250 chars
     if args['record']:
         if len(args['record']) > 63:
@@ -316,7 +316,7 @@ def main():
     if args['relative']:
         if args['type'] not in ['CNAME', 'MX', 'NS', 'SRV']:
             failed_validation = True
-            error = "Relative is only valid for CNAME, MX, NS and SRV record types"
+            error = "Relative is only valid for CNAME, MX, NS and SRV record types."
     # if any of the above failed then fail early
     if failed_validation:
         module.fail_json(failed=True, msg=error)
