@@ -14,7 +14,8 @@
 
 - assert:
     that:
-      - "'ApiErrorForbidden' in result.stdout"
+      - "'Memset API returned a 403 response (ApiErrorForbidden, Bad api_key)' in result.msg"
+      - result is not successful
 
 - name: test creating zone
   local_action:
@@ -28,8 +29,8 @@
 
 - assert:
     that:
-      - result.changed
-      - result.check_mode == true
+      - result is changed
+      - result is successful
 
 - name: create zone
   local_action:
@@ -42,7 +43,8 @@
 
 - assert:
     that:
-      - result.changed
+      - result is changed
+      - result is successful
 
 - name: test deleting zone
   local_action:
@@ -55,8 +57,8 @@
 
 - assert:
     that:
-      - result.changed
-      - result.check_mode == true
+      - result is changed
+      - result is successful
 
 # this should succeed
 - name: delete empty zone
@@ -65,12 +67,13 @@
     api_key: "{{ api_key }}"
     state: absent
     name: "{{ zone_name }}"
-    force: False
+    force: false
   register: result
 
 - assert:
     that:
-      - result.changed
+      - result is changed
+      - result is successful
 
 # this should succeed
 - name: create zone
@@ -83,7 +86,7 @@
 
 - assert:
     that:
-      - result.changed
+      - result is changed
       - result is successful
 
 # this should show no change or failure
@@ -97,7 +100,7 @@
 
 - assert:
     that:
-      - not result.changed
+      - result is not changed
 
 - name: delete zone with force
   local_action:
@@ -105,10 +108,10 @@
     api_key: "{{ api_key }}"
     state: absent
     name: "{{ zone_name }}"
-    force: True
+    force: true
   register: result
 
 - assert:
     that:
-      - result.changed
+      - result is changed
       - result is successful
