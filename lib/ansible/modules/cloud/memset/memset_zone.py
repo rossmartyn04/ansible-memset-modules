@@ -126,8 +126,6 @@ def check(args=None):
 
     retvals['changed'] = has_changed
     retvals['failed'] = has_failed
-    retvals['memset_api'] = response.json()
-    retvals['msg'] = 'Zone "{0}" exists: {1}' . format(args['name'], str(zone_exists))
 
     return(retvals)
 
@@ -135,12 +133,17 @@ def check(args=None):
 def create_or_delete(args=None):
     retvals = dict()
     has_failed, has_changed = False, False
-    msg, memset_api, _stderr = None, None, None
+    msg, memset_api, stderr = None, None, None
     payload = args['payload']
 
     # get the zones and check if the relevant zone exists
     api_method = 'dns.zone_list'
     _has_failed, _msg, response = memset_api_call(api_key=args['api_key'], api_method=api_method)
+    if _has_failed:
+        retvals['failed'] = _has_failed
+        retvals['msg'] = _msg
+
+        return(retvals)
 
     # zone_exists, counter = check_zone(data=response, name=args['name'])
     zone_exists, _msg, counter, _zone_id = get_zone_id(zone_name=args['name'], current_zones=response.json())
