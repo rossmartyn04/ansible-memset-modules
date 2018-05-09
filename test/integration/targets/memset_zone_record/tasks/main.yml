@@ -45,7 +45,7 @@
 - name: assert that record is not created
   assert:
     that:
-      - "'ansible-dns-tests-dupe matches multiple zones.' in result.msg"
+      - "'ansible-dns-zone-dupe matches multiple zones.' in result.msg"
       - result is not successful
 
 - name: create record with invalid priority
