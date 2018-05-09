@@ -121,8 +121,8 @@ def reload_dns(args=None):
             has_changed = True
 
     # assemble return variables
-    retvals['has_failed'] = has_failed
-    retvals['has_changed'] = has_changed
+    retvals['failed'] = has_failed
+    retvals['changed'] = has_changed
     for val in ['msg', 'stderr', 'memset_api']:
         if val is not None:
             retvals[val] = eval(val)
@@ -146,7 +146,7 @@ def main():
 
     retvals = reload_dns(args)
 
-    if retvals['has_failed']:
+    if retvals['failed']:
         module.fail_json(**retvals)
     else:
         module.exit_json(**retvals)
