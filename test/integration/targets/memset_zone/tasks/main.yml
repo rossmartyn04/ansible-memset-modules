@@ -1,6 +1,7 @@
+---
 - name: create random string
   set_fact:
-    zone_name: "{{ random_string | hash('md5') | truncate(16, True, '') + (65535 | random | string) }}.ansible.example.com"
+    zone_name: "{{ 65535 | random | string }}.ansible.example.com"
 
 - name: create zone with incorrect API key
   local_action:
@@ -12,7 +13,8 @@
   ignore_errors: true
   register: result
 
-- assert:
+- name: check API response with invalid API key
+  assert:
     that:
       - "'Memset API returned a 403 response (ApiErrorForbidden, Bad api_key)' in result.msg"
       - result is not successful
@@ -27,7 +29,8 @@
   check_mode: true
   register: result
 
-- assert:
+- name: check if the zone would be created
+  assert:
     that:
       - result is changed
       - result is successful
@@ -41,10 +44,24 @@
     ttl: 300
   register: result
 
-- assert:
+- name: create the zone
+  assert:
     that:
       - result is changed
       - result is successful
+
+- name: create duplicate zone
+  local_action:
+    module: memset_zone
+    api_key: "{{ api_key }}"
+    state: present
+    name: "{{ zone_name }}"
+  register: result
+
+- name: ensure we can't create duplicate zones
+  assert:
+    that:
+      - result is not changed
 
 - name: test deleting zone
   local_action:
@@ -55,12 +72,12 @@
   check_mode: true
   register: result
 
-- assert:
+- name: check if the zone would be deleted
+  assert:
     that:
       - result is changed
       - result is successful
 
-# this should succeed
 - name: delete empty zone
   local_action:
     module: memset_zone
@@ -70,37 +87,11 @@
     force: false
   register: result
 
-- assert:
+- name: delete the zone
+  assert:
     that:
       - result is changed
       - result is successful
-
-# this should succeed
-- name: create zone
-  local_action:
-    module: memset_zone
-    api_key: "{{ api_key }}"
-    state: present
-    name: "{{ zone_name }}"
-  register: result
-
-- assert:
-    that:
-      - result is changed
-      - result is successful
-
-# this should show no change or failure
-- name: create duplicate zone
-  local_action:
-    module: memset_zone
-    api_key: "{{ api_key }}"
-    state: present
-    name: "{{ zone_name }}"
-  register: result
-
-- assert:
-    that:
-      - result is not changed
 
 - name: delete zone with force
   local_action:
@@ -111,7 +102,8 @@
     force: true
   register: result
 
-- assert:
+- name: ensure force is respected
+  assert:
     that:
       - result is changed
       - result is successful
