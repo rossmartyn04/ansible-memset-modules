@@ -37,8 +37,10 @@ options:
         default: false
         type: bool
         description:
-            - Boolean value, if set will poll the reload job status and not return
-              until the job has completed
+            - Boolean value, if set will poll the reload job's status and return
+              when the job has completed (unless the 30 second timeout is reached first).
+              If the timeout is reached then the task will not be marked as failed, but
+              stderr will indicate that the polling failed.
 '''
 
 EXAMPLES = '''
@@ -87,6 +89,30 @@ from time import sleep
 from ansible.module_utils.memset import memset_api_call
 
 
+def poll_reload_status(api_key=None, job_id=None, payload=None):
+    memset_api, stderr, msg = None, None, None
+    payload['id'] = job_id
+
+    api_method = 'job.status'
+    _has_failed, _msg, response = memset_api_call(api_key=api_key, api_method=api_method, payload=payload)
+
+    while not response.json()['finished']:
+        counter = 0
+        while counter < 6:
+            sleep(5)
+            _has_failed, msg, response = memset_api_call(api_key=api_key, api_method=api_method, payload=payload)
+            counter += 1
+    if response.json()['error']:
+        # the reload job was submitted but polling failed. Don't return this as an overall task failure.
+        stderr = "Reload submitted successfully, but the Memset API returned a job error when attempting to poll the reload status."
+        msg = msg
+    else:
+        memset_api = response.json()
+        msg = None
+
+    return(memset_api, msg, stderr)
+
+
 def reload_dns(args=None):
     retvals, payload = dict(), dict()
     has_changed, has_failed = False, False
@@ -101,24 +127,15 @@ def reload_dns(args=None):
         retvals['msg'] = msg
         return(retvals)
 
-    if args['poll']:
-        payload['id'] = response.json()['id']
-        api_method = 'job.status'
-        _has_failed, _msg, response = memset_api_call(api_key=args['api_key'], api_method=api_method, payload=payload)
+    # set changed to true if the reload request was accepted
+    has_changed = True
+    memset_api = msg
+    # empty msg var as we don't want to return the API's json response twice
+    msg = None
 
-        while not response.json()['finished']:
-            counter = 0
-            while counter < 6:
-                sleep(5)
-                _has_failed, msg, response = memset_api_call(api_key=args['api_key'], api_method=api_method, payload=payload)
-                counter += 1
-        if response.json()['error']:
-            # the reload job was submitted but polling failed. Don't return this as an overall task failure
-            stderr = "DNS reload submitted, but the Memset API returned a job error when attempting to poll the reload status."
-            msg = msg
-        else:
-            memset_api = response.json()
-            has_changed = True
+    if args['poll']:
+        job_id = response.json()['id']
+        memset_api, msg, stderr = poll_reload_status(api_key=args['api_key'], job_id=job_id, payload=payload)
 
     # assemble return variables
     retvals['failed'] = has_failed
