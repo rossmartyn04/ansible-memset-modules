@@ -130,11 +130,88 @@ def check(args=None):
     return(retvals)
 
 
+def create_zone(args=None, zone_exists=None, payload=None):
+    has_changed, has_failed = False, False
+    msg, memset_api = None, None
+
+    if not zone_exists:
+        api_method = 'dns.zone_create'
+        payload['ttl'] = args['ttl']
+        payload['nickname'] = args['name']
+        has_failed, msg, response = memset_api_call(api_key=args['api_key'], api_method=api_method, payload=payload)
+        if not has_failed:
+            has_changed = True
+    else:
+        api_method = 'dns.zone_list'
+        _has_failed, _msg, response = memset_api_call(api_key=args['api_key'], api_method=api_method)
+        for zone in response.json():
+            if zone['nickname'] == args['name']:
+                break
+        if zone['ttl'] != args['ttl']:
+            payload['id'] = zone['id']
+            payload['ttl'] = args['ttl']
+            api_method = 'dns.zone_update'
+            has_failed, msg, response = memset_api_call(api_key=args['api_key'], api_method=api_method, payload=payload)
+            if not has_failed:
+                has_changed = True
+    # populate return var with zone info
+    api_method = 'dns.zone_list'
+    _has_failed, _msg, response = memset_api_call(api_key=args['api_key'], api_method=api_method)
+    zone_exists, msg, counter, zone_id = get_zone_id(zone_name=args['name'], current_zones=response.json())
+    if zone_exists:
+        payload = dict()
+        payload['id'] = zone_id
+        api_method = 'dns.zone_info'
+        _has_failed, _msg, response = memset_api_call(api_key=args['api_key'], api_method=api_method, payload=payload)
+        memset_api = response.json()
+    else:
+        msg = msg
+
+    return(has_failed, has_changed, memset_api, msg)
+
+
+def delete_zone(args=None, zone_exists=None, payload=None):
+    has_changed, has_failed = False, False
+    msg, memset_api = None, None
+
+    if zone_exists:
+        api_method = 'dns.zone_list'
+        _has_failed, _msg, response = memset_api_call(api_key=args['api_key'], api_method=api_method, payload=payload)
+        counter = 0
+        for zone in response.json():
+            if zone['nickname'] == args['name']:
+                counter += 1
+        if counter == 1:
+            for zone in response.json():
+                if zone['nickname'] == args['name']:
+                    zone_id = zone['id']
+                    domain_count = len(zone['domains'])
+                    record_count = len(zone['records'])
+            if (domain_count > 0 or record_count > 0) and args['force'] is False:
+                stderr = 'Zone contains domains or records and force was not used.'
+                has_failed, has_changed = True, False
+                module.fail_json(failed=has_failed, changed=has_changed, msg=msg, stderr=stderr, rc=1)
+            api_method = 'dns.zone_delete'
+            payload['id'] = zone_id
+            has_failed, msg, response = memset_api_call(api_key=args['api_key'], api_method=api_method, payload=payload)
+            if not has_failed:
+                has_changed = True
+                # return raw JSON from API in named var and then unset msg var so we aren't returning the same thing twice
+                memset_api = msg
+                msg = None
+        else:
+            has_failed, has_changed = True, False
+            msg = 'Unable to delete zone as multiple zones with the same name exist.'
+    else:
+        has_failed, has_changed = False, False
+
+    return(has_failed, has_changed, memset_api, msg)
+
+
 def create_or_delete(args=None):
-    retvals = dict()
+    retvals, payload = dict(), dict()
     has_failed, has_changed = False, False
     msg, memset_api, stderr = None, None, None
-    payload = args['payload']
 
     # get the zones and check if the relevant zone exists
     api_method = 'dns.zone_list'
@@ -145,68 +222,12 @@ def create_or_delete(args=None):
 
         return(retvals)
 
-    # zone_exists, counter = check_zone(data=response, name=args['name'])
     zone_exists, _msg, counter, _zone_id = get_zone_id(zone_name=args['name'], current_zones=response.json())
 
     if args['state'] == 'present':
-        if not zone_exists:
-            api_method = 'dns.zone_create'
-            payload['ttl'] = args['ttl']
-            payload['nickname'] = args['name']
-            has_failed, msg, response = memset_api_call(api_key=args['api_key'], api_method=api_method, payload=payload)
-            if not has_failed:
-                has_changed = True
-        else:
-            _has_failed, _msg, response = memset_api_call(api_key=args['api_key'], api_method=api_method, payload=payload)
-            for zone in response.json():
-                if zone['nickname'] == args['name']:
-                    break
-            if zone['ttl'] != args['ttl']:
-                payload['id'] = zone['id']
-                payload['ttl'] = args['ttl']
-                api_method = 'dns.zone_update'
-                has_failed, msg, response = memset_api_call(api_key=args['api_key'], api_method=api_method, payload=payload)
-                if not has_failed:
-                    has_changed = True
-        # populate return var with zone info
-        api_method = 'dns.zone_list'
-        _has_failed, _msg, response = memset_api_call(api_key=args['api_key'], api_method=api_method)
-        zone_exists, msg, counter, zone_id = get_zone_id(zone_name=args['name'], current_zones=response.json())
-        if zone_exists:
-            payload = dict()
-            payload['id'] = zone_id
-            api_method = 'dns.zone_info'
-            _has_failed, _msg, response = memset_api_call(api_key=args['api_key'], api_method=api_method, payload=payload)
-            memset_api = response.json()
-        else:
-            msg = msg
-    if args['state'] == 'absent':
-        if zone_exists:
-            _has_failed, _msg, response = memset_api_call(api_key=args['api_key'], api_method=api_method, payload=payload)
-            counter = 0
-            for zone in response.json():
-                if zone['nickname'] == args['name']:
-                    counter += 1
-            if counter == 1:
-                for zone in response.json():
-                    if zone['nickname'] == args['name']:
-                        zone_id = zone['id']
-                        domain_count = len(zone['domains'])
-                        record_count = len(zone['records'])
-                if (domain_count > 0 or record_count > 0) and args['force'] is False:
-                    stderr = 'Zone contains domains or records and force was not used.'
-                    has_failed, has_changed = True, False
-                    module.fail_json(failed=has_failed, changed=has_changed, msg=msg, stderr=stderr, rc=1)
-                api_method = 'dns.zone_delete'
-                payload['id'] = zone_id
-                has_failed, msg, response = memset_api_call(api_key=args['api_key'], api_method=api_method, payload=payload)
-                if not has_failed:
-                    has_changed = True
-            else:
-                has_failed, has_changed = True, False
-                msg = 'Unable to delete zone as multiple zones with the same name exist.'
-        else:
-            has_failed, has_changed = False, False
+        has_failed, has_changed, memset_api, msg = create_zone(args=args, zone_exists=zone_exists, payload=payload)
+    elif args['state'] == 'absent':
+        has_failed, has_changed, memset_api, msg = delete_zone(args=args, zone_exists=zone_exists, payload=payload)
 
     retvals['failed'] = has_failed
     retvals['changed'] = has_changed
@@ -236,7 +257,6 @@ def main():
     args['name'] = module.params['name']
     args['ttl'] = module.params['ttl']
     args['force'] = module.params['force']
-    args['payload'] = dict()
 
     # zone nickname length must be less than 250 chars
     if len(args['name']) > 250:
