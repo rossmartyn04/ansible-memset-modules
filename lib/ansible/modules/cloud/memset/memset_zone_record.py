@@ -150,6 +150,34 @@ from ansible.module_utils.memset import memset_api_call
 from ansible.module_utils.memset import get_zone_id
 
 
+def api_validation(args=None):
+    # perform some Memset API-specific validation
+    # https://www.memset.com/apidocs/methods_dns.html#dns.zone_record_create
+    failed_validation = False
+
+    # priority can only be integer 0 > 999
+    if not 0 <= args['priority'] <= 999:
+        failed_validation = True
+        error = 'Priority must be in the range 0 > 999 (inclusive).'
+    # data value must be max 250 chars
+    if len(args['address']) > 250:
+        failed_validation = True
+        error = "Address must be less than 250 characters in length."
+    # record value must be max 250 chars
+    if args['record']:
+        if len(args['record']) > 63:
+            failed_validation = True
+            error = "Record must be less than 63 characters in length."
+    # relative isn't used for all record types
+    if args['relative']:
+        if args['type'] not in ['CNAME', 'MX', 'NS', 'SRV']:
+            failed_validation = True
+            error = "Relative is only valid for CNAME, MX, NS and SRV record types."
+    # if any of the above failed then fail early
+    if failed_validation:
+        module.fail_json(failed=True, msg=error)
+
+
 def create_or_delete(args=None):
     has_failed, has_changed = False, False
     msg, memset_api, stderr = None, None, None
@@ -298,30 +326,7 @@ def main():
     args['check_mode'] = module.check_mode
 
     # perform some Memset API-specific validation
-    # https://www.memset.com/apidocs/methods_dns.html#dns.zone_record_create
-    failed_validation = False
-
-    # priority can only be integer 0 > 999
-    if not 0 <= args['priority'] <= 999:
-        failed_validation = True
-        error = 'Priority must be in the range 0 > 999 (inclusive).'
-    # data value must be max 250 chars
-    if len(args['address']) > 250:
-        failed_validation = True
-        error = "Address must be less than 250 characters in length."
-    # record value must be max 250 chars
-    if args['record']:
-        if len(args['record']) > 63:
-            failed_validation = True
-            error = "Record must be less than 63 characters in length."
-    # relative isn't used for all record types
-    if args['relative']:
-        if args['type'] not in ['CNAME', 'MX', 'NS', 'SRV']:
-            failed_validation = True
-            error = "Relative is only valid for CNAME, MX, NS and SRV record types."
-    # if any of the above failed then fail early
-    if failed_validation:
-        module.fail_json(failed=True, msg=error)
+    api_validation(args=args)
 
     retvals = create_or_delete(args)
 
