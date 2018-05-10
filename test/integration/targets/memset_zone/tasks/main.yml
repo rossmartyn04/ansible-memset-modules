@@ -56,6 +56,7 @@
     api_key: "{{ api_key }}"
     state: present
     name: "{{ zone_name }}"
+    ttl: 300
   register: result
 
 - name: ensure we can't create duplicate zones
@@ -88,6 +89,20 @@
   register: result
 
 - name: delete the zone
+  assert:
+    that:
+      - result is changed
+      - result is successful
+
+- name: create zone for deletion test
+  local_action:
+    module: memset_zone
+    api_key: "{{ api_key }}"
+    state: present
+    name: "{{ zone_name }}"
+  register: result
+
+- name: ensure we can't create duplicate zones
   assert:
     that:
       - result is changed
