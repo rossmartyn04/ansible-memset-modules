@@ -81,6 +81,13 @@ from ansible.module_utils.memset import check_zone_domain
 from ansible.module_utils.memset import memset_api_call
 
 
+def api_validation(args=None):
+    # zone domain length must be less than 250 chars
+    if len(args['domain']) > 250:
+        stderr = 'Zone domain must be less than 250 characters in length.'
+        module.fail_json(failed=True, msg=stderr, stderr=stderr)
+
+
 def check(args=None):
     retvals = dict()
     api_method = 'dns.zone_domain_list'
@@ -186,10 +193,8 @@ def main():
     args['domain'] = module.params['domain']
     args['zone'] = module.params['zone']
 
-    # zone domain length must be less than 250 chars
-    if len(args['domain']) > 250:
-        stderr = 'Zone domain must be less than 250 characters in length.'
-        module.fail_json(failed=True, msg=stderr, stderr=stderr)
+    # validate some API-specific limitations
+    api_validation(args=args)
 
     if module.check_mode:
         retvals = check(args)
