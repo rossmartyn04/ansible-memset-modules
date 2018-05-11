@@ -18,14 +18,14 @@ DOCUMENTATION = '''
 module: memset_zone_record
 author: "Simon Weald (@analbeard)"
 version_added: "2.6"
-short_description: Manage zone records
+short_description: Manage zone records.
 notes:
   - Zones can be thought of as a logical group of domains, all of which share the
     same DNS records (i.e. they point to the same IP). An API key generated via the
     Memset customer control panel is needed with the following minimum scope -
-    `dns.zone_create`, `dns.zone_delete`, `dns.zone_list`.
+    I(dns.zone_create), I(dns.zone_delete), I(dns.zone_list).
 description:
-    - Manage individual zone records.
+    - Manage DNS records in a Memset account.
 options:
     state:
         required: true
@@ -35,37 +35,36 @@ options:
     api_key:
         required: true
         description:
-            - The API key obtained from the Memset control panel
+            - The API key obtained from the Memset control panel.
     address:
         required: true
         description:
-            - The address for this record (can be IP or text string depending on record type)
+            - The address for this record (can be IP or text string depending on record type).
         aliases: [ ip, data ]
     priority:
         required: false
         description:
-            - SRV/TXT record priority, in the range 0 > 999 (inclusive)
+            - C(SRV) and C(TXT) record priority, in the range 0 > 999 (inclusive).
     record:
         required: false
         description:
-            - The subdomain to create
+            - The subdomain to create.
     type:
         required: true
         description:
-            - The type of DNS record to create. Must be one of -
-              'A', 'AAAA', 'CNAME', 'MX', 'NS', 'SRV', 'TXT'
+            - The type of DNS record to create.
         choices: [ A, AAAA, CNAME, MX, NS, SRV, TXT ]
     relative:
         required: false
         description:
-            - If set then the current domain is added onto the address field for CNAME, MX, NS
-              and SRV record types.
+            - If set then the current domain is added onto the address field for C(CNAME), C(MX), C(NS)
+              and C(SRV)record types.
     ttl:
         required: false
         description:
             - The record's TTL in seconds (will inherit zone's TTL if not explicitly set).
               This must be one of - 0, 300, 600, 900, 1800, 3600, 7200, 10800, 21600, 43200, 86400
-              (where 0 implies inheritance from the zone)
+              (where 0 implies inheritance from the zone).
     zone:
         required: true
         description:
@@ -101,47 +100,47 @@ EXAMPLES = '''
 
 RETURN = '''
 memset_api:
-  description: Record info from the Memset API
+  description: Record info from the Memset API.
   returned: when state == present
   type: complex
   contains:
     address:
-      description: Record content (may be an IP, string or blank depending on record type)
+      description: Record content (may be an IP, string or blank depending on record type).
       returned: always
       type: string
       sample: 1.1.1.1
     id:
-      description: Record ID
+      description: Record ID.
       returned: always
       type: string
       sample: "b0bb1ce851aeea6feeb2dc32fe83bf9c"
     priority:
-      description: Priority for MX and SRV records
+      description: Priority for C(MX) and C(SRV) records.
       returned: always
       type: integer
       sample: 10
     record:
-      description: Name of record
+      description: Name of record.
       returned: always
       type: string
       sample: "www"
     relative:
-      description: Adds the current domain onto the address field for CNAME, MX, NS and SRV types
+      description: Adds the current domain onto the address field for C(CNAME), C(MX), C(NS) and C(SRV) types.
       returned: always
       type: boolean
       sample: False
     ttl:
-      description: Record TTL
+      description: Record TTL.
       returned: always
       type: integer
       sample: 10
     type:
-      description: Record type
+      description: Record type.
       returned: always
       type: string
       sample: AAAA
     zone_id:
-      description: Zone ID
+      description: Zone ID.
       returned: always
       type: string
       sample: "b0bb1ce851aeea6feeb2dc32fe83bf9c"
