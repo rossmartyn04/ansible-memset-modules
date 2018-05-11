@@ -98,9 +98,9 @@ def api_validation(args=None):
 
 def check(args=None):
     retvals = dict()
-    api_method = 'dns.zone_domain_list'
     has_changed = False
 
+    api_method = 'dns.zone_domain_list'
     has_failed, msg, response = memset_api_call(api_key=args['api_key'], api_method=api_method)
 
     domain_exists = check_zone_domain(data=response, domain=args['domain'])
