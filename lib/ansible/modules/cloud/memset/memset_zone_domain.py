@@ -90,6 +90,10 @@ except ImportError:
 
 
 def api_validation(args=None):
+    '''
+    Perform some validation which will be enforced by Memset's API (see:
+    https://www.memset.com/apidocs/methods_dns.html#dns.zone_domain_create)
+    '''
     # zone domain length must be less than 250 chars
     if len(args['domain']) > 250:
         stderr = 'Zone domain must be less than 250 characters in length.'
@@ -97,6 +101,9 @@ def api_validation(args=None):
 
 
 def check(args=None):
+    '''
+    Support for running with check mode.
+    '''
     retvals = dict()
     has_changed = False
 
@@ -105,7 +112,7 @@ def check(args=None):
 
     domain_exists = check_zone_domain(data=response, domain=args['domain'])
 
-    # set changed to true if the operation would cause a change
+    # set changed to true if the operation would cause a change.
     has_changed = ((domain_exists and args['state'] == 'absent') or (not domain_exists and args['state'] == 'present'))
 
     retvals['changed'] = has_changed
@@ -115,15 +122,19 @@ def check(args=None):
 
 
 def create_zone_domain(args=None, zone_exists=None, zone_id=None, payload=None):
+    '''
+    At this point we already know whether the containing zone exists,
+    so we just need to create the domain (or exit if it already exists).
+    '''
     has_changed, has_failed = False, False
     msg = None
 
-    # making it this far means we have a unique zone to use
     api_method = 'dns.zone_domain_list'
     _has_failed, _msg, response = memset_api_call(api_key=args['api_key'], api_method=api_method)
+
     for zone_domain in response.json():
         if zone_domain['domain'] == args['domain']:
-            # zone domain already exists, nothing to change
+            # zone domain already exists, nothing to change.
             has_changed = False
             break
     else:
@@ -139,12 +150,19 @@ def create_zone_domain(args=None, zone_exists=None, zone_id=None, payload=None):
 
 
 def delete_zone_domain(args=None, payload=None):
+    '''
+    Deletion is pretty simple, domains are always unique so we
+    we don't need to do any sanity checking to avoid deleting the
+    wrong thing.
+    '''
     has_changed, has_failed = False, False
     msg, memset_api = None, None
 
     api_method = 'dns.zone_domain_list'
     _has_failed, _msg, response = memset_api_call(api_key=args['api_key'], api_method=api_method)
+
     domain_exists = check_zone_domain(data=response, domain=args['domain'])
+
     if domain_exists:
         api_method = 'dns.zone_domain_delete'
         payload['domain'] = args['domain']
@@ -152,28 +170,39 @@ def delete_zone_domain(args=None, payload=None):
         if not has_failed:
             has_changed = True
             memset_api = response.json()
+            # unset msg as we don't want to return unecessary info to the user.
             msg = None
 
     return(has_failed, has_changed, memset_api, msg)
 
 
 def create_or_delete_domain(args=None):
+    '''
+    We need to perform some initial sanity checking and also look
+    up required info before handing it off to create or delete.
+    '''
     retvals, payload = dict(), dict()
     has_changed, has_failed = False, False
     msg, stderr, memset_api = None, None, None
 
-    # get the zones and check if the relevant zone exists
+    # get the zones and check if the relevant zone exists.
     api_method = 'dns.zone_list'
     has_failed, msg, response = memset_api_call(api_key=args['api_key'], api_method=api_method)
 
     if has_failed:
+        # this is the first time the API is called; incorrect credentials will
+        # manifest themselves at this point so we need to ensure the user is
+        # informed of the reason.
         retvals['failed'] = has_failed
         retvals['msg'] = msg
-        retvals['stderr'] = "API returned an error: {0}" .format(response.status_code)
+        retvals['stderr'] = "API returned an error: {0}" . format(response.status_code)
         return(retvals)
 
     zone_exists, msg, counter, zone_id = get_zone_id(zone_name=args['zone'], current_zones=response.json())
+
     if not zone_exists:
+        # the zone needs to be unique - this isn't a requirement of Memset's API but it
+        # makes sense in the context of this module.
         has_failed = True
         if counter == 0:
             stderr = "DNS zone '{0}' does not exist, cannot create domain." . format(args['zone'])
@@ -183,7 +212,6 @@ def create_or_delete_domain(args=None):
         retvals['failed'] = has_failed
         retvals['msg'] = stderr
         retvals['stderr'] = stderr
-
         return(retvals)
 
     if args['state'] == 'present':
@@ -216,12 +244,13 @@ def main():
     if not HAS_REQUESTS:
         module.fail_json(msg='requests required for this module')
 
+    # populate the dict with the user-provided vars.
     args = dict()
     for key, arg in module.params.items():
         args[key] = arg
     args['check_mode'] = module.check_mode
 
-    # validate some API-specific limitations
+    # validate some API-specific limitations.
     api_validation(args=args)
 
     if module.check_mode:
@@ -229,6 +258,8 @@ def main():
     else:
         retvals = create_or_delete_domain(args)
 
+    # we would need to populate the return values with the API's response
+    # in several places so it's easier to do it at the end instead.
     if not retvals['failed']:
         if args['state'] == 'present' and not module.check_mode:
             payload = dict()
