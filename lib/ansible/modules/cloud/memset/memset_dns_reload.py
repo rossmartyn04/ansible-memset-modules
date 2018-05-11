@@ -98,6 +98,12 @@ except ImportError:
 
 
 def poll_reload_status(api_key=None, job_id=None, payload=None):
+    '''
+    We poll the `job.status` endpoint every 5 seconds up to a
+    maximum of 6 times. This is a relatively arbitrary choice of
+    timeout, however requests rarely take longer than 15 seconds
+    to complete.
+    '''
     memset_api, stderr, msg = None, None, None
     payload['id'] = job_id
 
@@ -122,6 +128,10 @@ def poll_reload_status(api_key=None, job_id=None, payload=None):
 
 
 def reload_dns(args=None):
+    '''
+    DNS reloads are a single API call and therefore there's not much
+    which can go wrong outside of auth errors.
+    '''
     retvals, payload = dict(), dict()
     has_changed, has_failed = False, False
     memset_api, msg, stderr = None, None, None
@@ -130,22 +140,26 @@ def reload_dns(args=None):
     has_failed, msg, response = memset_api_call(api_key=args['api_key'], api_method=api_method)
 
     if has_failed:
+        # this is the first time the API is called; incorrect credentials will
+        # manifest themselves at this point so we need to ensure the user is
+        # informed of the reason.
         retvals['failed'] = has_failed
         retvals['memset_api'] = response.json()
         retvals['msg'] = msg
         return(retvals)
 
-    # set changed to true if the reload request was accepted
+    # set changed to true if the reload request was accepted.
     has_changed = True
     memset_api = msg
-    # empty msg var as we don't want to return the API's json response twice
+    # empty msg var as we don't want to return the API's json response twice.
     msg = None
 
     if args['poll']:
+        # hand off to the poll function.
         job_id = response.json()['id']
         memset_api, msg, stderr = poll_reload_status(api_key=args['api_key'], job_id=job_id, payload=payload)
 
-    # assemble return variables
+    # assemble return variables.
     retvals['failed'] = has_failed
     retvals['changed'] = has_changed
     for val in ['msg', 'stderr', 'memset_api']:
@@ -168,6 +182,7 @@ def main():
     if not HAS_REQUESTS:
         module.fail_json(msg='requests required for this module')
 
+    # populate the dict with the user-provided vars.
     args = dict()
     for key, arg in module.params.items():
         args[key] = arg
