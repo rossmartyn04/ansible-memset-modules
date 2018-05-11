@@ -18,14 +18,14 @@ DOCUMENTATION = '''
 module: memset_zone_domain
 author: "Simon Weald (@analbeard)"
 version_added: "2.6"
-short_description: Manage zone domains
+short_description: Manage zone domains.
 notes:
   - Zone domains can be thought of as a collection of domains, all of which share the
     same DNS records (i.e. they point to the same IP). An API key generated via the
     Memset customer control panel is needed with the following minimum scope -
-    `dns.zone_domain_create`, `dns.zone_domain_delete`, `dns.zone_domain_list`.
+    I(dns.zone_domain_create), I(dns.zone_domain_delete), I(dns.zone_domain_list.
 description:
-    - Manage DNS zone domains. These form the basis of grouping similar domains together.
+    - Manage DNS zone domains in a Memset account.
 options:
     state:
         required: true
@@ -35,7 +35,7 @@ options:
     api_key:
         required: true
         description:
-            - The API key obtained from the Memset control panel
+            - The API key obtained from the Memset control panel.
     domain:
         required: true
         description:
@@ -44,7 +44,7 @@ options:
     zone:
         required: true
         description:
-            - The zone to add the domain to (this must already exist)
+            - The zone to add the domain to (this must already exist).
 requirements:
     - "requests"
 '''
