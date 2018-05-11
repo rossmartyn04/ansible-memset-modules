@@ -178,11 +178,89 @@ def api_validation(args=None):
         module.fail_json(failed=True, msg=error)
 
 
+def create_zone_record(args=None, zone_id=None, records=None, payload=None):
+    has_changed, has_failed = False, False
+    msg, memset_api = None, None
+
+    # assemble the new record
+    new_record = dict()
+    new_record['zone_id'] = zone_id
+    new_record['priority'] = args['priority']
+    new_record['address'] = args['address']
+    new_record['relative'] = args['relative']
+    new_record['record'] = args['record']
+    new_record['ttl'] = args['ttl']
+    new_record['type'] = args['type']
+
+    # if we have any matches, update them
+    if records:
+        for zone_record in records:
+            # record exists, add ID to payload
+            new_record['id'] = zone_record['id']
+            if zone_record == new_record:
+                # nothing to do; record is already correct
+                memset_api = zone_record
+                return(has_changed, has_failed, memset_api, msg)
+            else:
+                # merge dicts ensuring we change any updated values
+                payload = zone_record.copy()
+                payload.update(new_record)
+                api_method = 'dns.zone_record_update'
+                if args['check_mode']:
+                    has_changed = True
+                    # return the new record
+                    memset_api = new_record
+                    return(has_changed, has_failed, memset_api, msg)
+                has_failed, msg, response = memset_api_call(api_key=args['api_key'], api_method=api_method, payload=payload)
+                if not has_failed:
+                    has_changed = True
+                    memset_api = new_record
+                    # empty msg as we don't want to return a boatload of json to the user
+                    msg = None
+    else:
+        # no record found, so we need to create it
+        api_method = 'dns.zone_record_create'
+        payload = new_record
+        if args['check_mode']:
+            has_changed = True
+            memset_api = new_record
+            return(has_changed, has_failed, memset_api, msg)
+        has_failed, msg, response = memset_api_call(api_key=args['api_key'], api_method=api_method, payload=payload)
+        if not has_failed:
+            has_changed = True
+            memset_api = new_record
+            #  empty msg as we don't want to return a boatload of json to the user
+            msg = None
+
+    return(has_changed, has_failed, memset_api, msg)
+
+
+def delete_zone_record(args=None, records=None, payload=None):
+    has_changed, has_failed = False, False
+    msg, memset_api = None, None
+
+    # if we have any matches, delete them
+    if records:
+        for zone_record in records:
+            if args['check_mode']:
+                has_changed = True
+                return(has_changed, has_failed, memset_api, msg)
+            payload['id'] = zone_record['id']
+            api_method = 'dns.zone_record_delete'
+            has_failed, msg, response = memset_api_call(api_key=args['api_key'], api_method=api_method, payload=payload)
+            if not has_failed:
+                has_changed = True
+                memset_api = zone_record
+                #  empty msg as we don't want to return a boatload of json to the user
+                msg = None
+
+    return(has_changed, has_failed, memset_api, msg)
+
+
 def create_or_delete(args=None):
     has_failed, has_changed = False, False
     msg, memset_api, stderr = None, None, None
-    payload = dict()
-    retvals = dict()
+    retvals, payload = dict(), dict()
 
     # get the zones and check if the relevant zone exists
     api_method = 'dns.zone_list'
@@ -206,86 +284,20 @@ def create_or_delete(args=None):
         retvals['msg'] = stderr
         retvals['stderr'] = stderr
         return(retvals)
-    else:
-        # get a list of all records ( as we can't limit records by zone)
-        api_method = 'dns.zone_record_list'
-        _has_failed, _msg, response = memset_api_call(api_key=args['api_key'], api_method=api_method)
 
-        # find any matching records
-        records = [record for record in response.json() if record['zone_id'] == zone_id
-                   and record['record'] == args['record'] and record['type'] == args['type']]
+    # get a list of all records ( as we can't limit records by zone)
+    api_method = 'dns.zone_record_list'
+    _has_failed, _msg, response = memset_api_call(api_key=args['api_key'], api_method=api_method)
 
-        if args['state'] == 'present':
-            # assemble the new record
-            new_record = dict()
-            new_record['zone_id'] = zone_id
-            new_record['priority'] = args['priority']
-            new_record['address'] = args['address']
-            new_record['relative'] = args['relative']
-            new_record['record'] = args['record']
-            new_record['ttl'] = args['ttl']
-            new_record['type'] = args['type']
+    # find any matching records
+    records = [record for record in response.json() if record['zone_id'] == zone_id
+                and record['record'] == args['record'] and record['type'] == args['type']]
 
-            # if we have any matches, update them
-            if records:
-                for zone_record in records:
-                    # record exists, add ID to payload
-                    new_record['id'] = zone_record['id']
-                    if zone_record == new_record:
-                        # nothing to do; record is already correct
-                        retvals['changed'] = has_changed
-                        retvals['failed'] = has_failed
-                        retvals['memset_api'] = zone_record
-                        return(retvals)
-                    else:
-                        # merge dicts ensuring we change any updated values
-                        payload = zone_record.copy()
-                        payload.update(new_record)
-                        api_method = 'dns.zone_record_update'
-                        if args['check_mode']:
-                            retvals['changed'] = True
-                            retvals['failed'] = has_failed
-                            # return the new record
-                            retvals['memset_api'] = new_record
-                            return(retvals)
-                        has_failed, msg, response = memset_api_call(api_key=args['api_key'], api_method=api_method, payload=payload)
-                        if not has_failed:
-                            has_changed = True
-                            memset_api = new_record
-                            # empty msg as we don't want to return a boatload of json to the user
-                            msg = None
-            else:
-                # no record found, so we need to create it
-                api_method = 'dns.zone_record_create'
-                payload = new_record
-                if args['check_mode']:
-                    retvals['changed'] = True
-                    retvals['failed'] = has_failed
-                    retvals['memset_api'] = new_record
-                    return(retvals)
-                has_failed, msg, response = memset_api_call(api_key=args['api_key'], api_method=api_method, payload=payload)
-                if not has_failed:
-                    has_changed = True
-                    memset_api = new_record
-                    #  empty msg as we don't want to return a boatload of json to the user
-                    msg = None
+    if args['state'] == 'present':
+        has_changed, has_failed, memset_api, msg = create_zone_record(args=args, zone_id=zone_id, records=records, payload=payload)
 
-        if args['state'] == 'absent':
-            # if we have any matches, delete them
-            if records:
-                for zone_record in records:
-                    if args['check_mode']:
-                        retvals['changed'] = True
-                        retvals['failed'] = has_failed
-                        return(retvals)
-                    payload['id'] = zone_record['id']
-                    api_method = 'dns.zone_record_delete'
-                    has_failed, msg, response = memset_api_call(api_key=args['api_key'], api_method=api_method, payload=payload)
-                    if not has_failed:
-                        has_changed = True
-                        memset_api = zone_record
-                        #  empty msg as we don't want to return a boatload of json to the user
-                        msg = None
+    if args['state'] == 'absent':
+        has_changed, has_failed, memset_api, msg = delete_zone_record(args=args, records=records, payload=payload)
 
     retvals['changed'] = has_changed
     retvals['failed'] = has_failed
