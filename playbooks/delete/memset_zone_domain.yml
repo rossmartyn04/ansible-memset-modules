@@ -1,0 +1,14 @@
+- hosts: localhost
+  become: false
+
+  tasks:
+  - name: include secrets
+    include_vars: ../secrets.yaml
+
+  - name: remove domain from zone
+    local_action:
+      module: memset_zone_domain
+      api_key: "{{ api_key }}"
+      state: absent
+      domain: "{{ zone_domain }}"
+      zone: "{{ zone_domain }}"

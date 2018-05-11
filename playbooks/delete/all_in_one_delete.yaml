@@ -1,0 +1,47 @@
+---
+- hosts: localhost
+  become: false
+  gather_facts: false
+ 
+  tasks:
+  - name: include secrets
+    include_vars: ../secrets.yaml
+
+  - name: delete zone
+    local_action:
+      module: memset_zone
+      api_key: "{{ api_key }}"
+      state: absent
+      name: "{{ zone_domain }}"
+    notify: request DNS reload and poll
+
+  - name: remove domain from zone
+    local_action:
+      module: memset_zone_domain
+      api_key: "{{ api_key }}"
+      state: absent
+      domain: "{{ zone_domain }}"
+      zone: "{{ zone_domain }}"
+    notify: request DNS reload and poll
+
+  - name: delete DNS record
+    local_action:
+      module: memset_zone_record
+      api_key: "{{ api_key }}"
+      state: absent
+      zone: "{{ zone_domain }}"
+      type: "{{ item.type }}"
+      record: "{{ item.record }}"
+      data: "{{ item.data }}"
+      priority: "{{ item.priority | default(0) }}"
+      relative: "{{ item.relative | default(False) }}"
+      ttl: "{{ item.ttl | default(0) }}"
+    with_items: "{{ dns_records }}"
+    notify: request DNS reload and poll
+ 
+  handlers:
+  - name: request DNS reload and poll
+    local_action:
+      module: memset_dns_reload
+      api_key: "{{ api_key }}"
+      poll: true
