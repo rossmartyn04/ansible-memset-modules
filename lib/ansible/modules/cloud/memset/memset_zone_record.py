@@ -337,15 +337,8 @@ def main():
         module.fail_json(msg='requests required for this module')
 
     args = dict()
-    args['state'] = module.params['state']
-    args['api_key'] = module.params['api_key']
-    args['zone'] = module.params['zone']
-    args['type'] = module.params['type']
-    args['record'] = module.params['record']
-    args['address'] = module.params['address']
-    args['priority'] = module.params['priority']
-    args['relative'] = module.params['relative']
-    args['ttl'] = module.params['ttl']
+    for key, arg in module.params.items():
+        args[key] = arg
     args['check_mode'] = module.check_mode
 
     # perform some Memset API-specific validation
