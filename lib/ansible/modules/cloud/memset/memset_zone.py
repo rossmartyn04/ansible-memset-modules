@@ -50,6 +50,8 @@ options:
         choices: [ 0, 300, 600, 900, 1800, 3600, 7200, 10800, 21600, 43200, 86400 ]
     force:
         required: false
+        default: false
+        type: bool
         description:
             - Forces deletion of a zone and all zone domains/zone records it contains.
 requirements:
