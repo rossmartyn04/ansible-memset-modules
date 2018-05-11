@@ -25,11 +25,7 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 # USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-try:
-    import requests
-    requests_found = True
-except ImportError:
-    requests_found = False
+import requests
 
 
 def memset_api_call(api_key, api_method, payload=None):

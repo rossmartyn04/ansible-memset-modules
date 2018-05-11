@@ -52,6 +52,8 @@ options:
         required: false
         description:
             - Forces deletion of a zone and all zone domains/zone records it contains.
+requirements:
+    - "requests"
 '''
 
 EXAMPLES = '''
@@ -110,6 +112,12 @@ memset_api:
 from ansible.module_utils.memset import check_zone
 from ansible.module_utils.memset import get_zone_id
 from ansible.module_utils.memset import memset_api_call
+
+try:
+    import requests
+    HAS_REQUESTS = True
+except ImportError:
+    HAS_REQUESTS = False
 
 
 def check(args=None):
@@ -250,6 +258,9 @@ def main():
         ),
         supports_check_mode=True
     )
+
+    if not HAS_REQUESTS:
+        module.fail_json(msg='requests required for this module')
 
     args = dict()
     args['state'] = module.params['state']

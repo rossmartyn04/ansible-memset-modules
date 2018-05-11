@@ -45,6 +45,8 @@ options:
         required: true
         description:
             - The zone to add the domain to (this must already exist)
+requirements:
+    - "requests"
 '''
 
 EXAMPLES = '''
@@ -79,6 +81,12 @@ memset_api:
 from ansible.module_utils.memset import get_zone_id
 from ansible.module_utils.memset import check_zone_domain
 from ansible.module_utils.memset import memset_api_call
+
+try:
+    import requests
+    HAS_REQUESTS = True
+except ImportError:
+    HAS_REQUESTS = False
 
 
 def api_validation(args=None):
@@ -205,6 +213,9 @@ def main():
         ),
         supports_check_mode=True
     )
+
+    if not HAS_REQUESTS:
+        module.fail_json(msg='requests required for this module')
 
     args = dict()
     args['state'] = module.params['state']
