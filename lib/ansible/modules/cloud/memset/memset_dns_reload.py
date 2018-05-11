@@ -18,21 +18,21 @@ DOCUMENTATION = '''
 module: memset_dns_reload
 author: "Simon Weald (@analbeard)"
 version_added: "2.6"
-short_description: Request reload of Memset's DNS infrastructure
+short_description: Request reload of Memset's DNS infrastructure,
 notes:
   - DNS reload requests are a best-effort service provided by Memset; these generally
     happen every 15 minutes by default, however you can request an immediate reload if
     later tasks rely on the records being created. An API key generated via the
     Memset customer control panel is required with the following minimum scope -
-    `dns.reload`. If you wish to poll the job status to wait until the reload has
-    completed, then `job.status` is also required.
+    I(dns.reload). If you wish to poll the job status to wait until the reload has
+    completed, then I(job.status) is also required.
 description:
     - Request a reload of Memset's DNS infrastructure, and optionally poll until it finishes.
 options:
     api_key:
         required: true
         description:
-            - The API key obtained from the Memset control panel
+            - The API key obtained from the Memset control panel.
     poll:
         default: false
         type: bool
@@ -46,7 +46,7 @@ requirements:
 '''
 
 EXAMPLES = '''
-- name: submit DNS reload and poll
+- name: submit DNS reload and poll.
   memset_dns_reload:
     api_key: 5eb86c9196ab03919abcf03857163741
     poll: True
@@ -56,32 +56,32 @@ EXAMPLES = '''
 RETURN = '''
 ---
 memset_api:
-  description: Raw response from the Memset API
+  description: Raw response from the Memset API.
   returned: always
   type: complex
   contains:
     error:
-      description: Whether the job ended in error state
+      description: Whether the job ended in error state.
       returned: always
       type: bool
       sample: true
     finished:
-      description: Whether the job completed before the result was returned
+      description: Whether the job completed before the result was returned.
       returned: always
       type: bool
       sample: true
     id:
-      description: Job ID
+      description: Job ID.
       returned: always
       type: string
       sample: "c9cc8ad2a3e3fb8c63ed83c424928ef8"
     status:
-      description: Job status
+      description: Job status.
       returned: always
       type: string
       sample: "DONE"
     type:
-      description: Job type
+      description: Job type.
       returned: always
       type: string
       sample: "dns"
