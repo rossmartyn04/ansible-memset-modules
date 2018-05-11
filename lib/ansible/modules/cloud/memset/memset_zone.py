@@ -53,7 +53,7 @@ options:
         description:
             - Forces deletion of a zone and all zone domains/zone records it contains.
 requirements:
-    - "requests"
+    - "requests >= 2.0.0"
 '''
 
 EXAMPLES = '''

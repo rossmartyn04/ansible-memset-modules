@@ -70,7 +70,7 @@ options:
         description:
             - The name of the zone to which to add the record to.
 requirements:
-    - "requests"
+    - "requests >= 2.0.0"
 '''
 
 EXAMPLES = '''

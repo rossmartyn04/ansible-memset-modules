@@ -46,7 +46,7 @@ options:
         description:
             - The zone to add the domain to (this must already exist).
 requirements:
-    - "requests"
+    - "requests >= 2.0.0"
 '''
 
 EXAMPLES = '''

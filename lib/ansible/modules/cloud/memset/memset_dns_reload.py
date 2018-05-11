@@ -42,7 +42,7 @@ options:
               If the timeout is reached then the task will not be marked as failed, but
               stderr will indicate that the polling failed.
 requirements:
-    - "requests"
+    - "requests >= 2.0.0"
 '''
 
 EXAMPLES = '''
