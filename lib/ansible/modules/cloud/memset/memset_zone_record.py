@@ -193,12 +193,8 @@ def create_zone_record(args=None, zone_id=None, records=None, payload=None):
     # assemble the new record
     new_record = dict()
     new_record['zone_id'] = zone_id
-    new_record['priority'] = args['priority']
-    new_record['address'] = args['address']
-    new_record['relative'] = args['relative']
-    new_record['record'] = args['record']
-    new_record['ttl'] = args['ttl']
-    new_record['type'] = args['type']
+    for arg in ['priority', 'address', 'relative', 'record', 'ttl', 'type']:
+        new_record[arg] = args[arg]
 
     # if we have any matches, update them
     if records:
