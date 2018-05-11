@@ -169,8 +169,8 @@ def main():
         module.fail_json(msg='requests required for this module')
 
     args = dict()
-    args['api_key'] = module.params['api_key']
-    args['poll'] = module.params['poll']
+    for key, arg in module.params.items():
+        args[key] = arg
 
     retvals = reload_dns(args)
 
