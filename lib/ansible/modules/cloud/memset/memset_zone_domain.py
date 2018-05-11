@@ -161,7 +161,6 @@ def create_or_delete_domain(args=None):
     retvals, payload = dict(), dict()
     has_changed, has_failed = False, False
     msg, stderr, memset_api = None, None, None
-    payload = dict()
 
     # get the zones and check if the relevant zone exists
     api_method = 'dns.zone_list'
