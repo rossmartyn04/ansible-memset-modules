@@ -18,14 +18,14 @@ DOCUMENTATION = '''
 module: memset_zone
 author: "Simon Weald (@analbeard)"
 version_added: "2.6"
-short_description: Manage zones
+short_description: Manage zones.
 notes:
   - Zones can be thought of as a logical group of domains, all of which share the
     same DNS records (i.e. they point to the same IP). An API key generated via the
     Memset customer control panel is needed with the following minimum scope -
-    `dns.zone_create`, `dns.zone_delete`, `dns.zone_list`.
+    I(dns.zone_create), I(dns.zone_delete), I(dns.zone_list).
 description:
-    - Manage DNS zones. These form the basis of grouping similar domains together.
+    - Manage DNS zones in a Memset account.
 options:
     state:
         required: true
@@ -35,7 +35,7 @@ options:
     api_key:
         required: true
         description:
-            - The API key obtained from the Memset control panel
+            - The API key obtained from the Memset control panel.
     name:
         required: true
         description:
@@ -46,7 +46,7 @@ options:
         required: false
         description:
             - The default TTL for all records created in the zone. This must be a
-              valid int from https://www.memset.com/apidocs/methods_dns.html#dns.zone_create
+              valid int from U(https://www.memset.com/apidocs/methods_dns.html#dns.zone_create).
         choices: [ 0, 300, 600, 900, 1800, 3600, 7200, 10800, 21600, 43200, 86400 ]
     force:
         required: false
@@ -118,6 +118,13 @@ try:
     HAS_REQUESTS = True
 except ImportError:
     HAS_REQUESTS = False
+
+
+def api_validation(args=None):
+    # zone domain length must be less than 250 chars
+    if len(args['domain']) > 250:
+        stderr = 'Zone domain must be less than 250 characters in length.'
+        module.fail_json(failed=True, msg=stderr, stderr=stderr)
 
 
 def check(args=None):
@@ -269,11 +276,8 @@ def main():
     args['ttl'] = module.params['ttl']
     args['force'] = module.params['force']
 
-    # zone nickname length must be less than 250 chars
-    if len(args['name']) > 250:
-        has_failed = True
-        msg = "Zone name must be less than 250 characters in length."
-        module.fail_json(failed=has_failed, msg=msg)
+    # validate some API-specific limitations
+    api_validation(args=args)
 
     if module.check_mode:
         retvals = check(args)
