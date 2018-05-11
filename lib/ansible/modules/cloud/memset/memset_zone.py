@@ -123,14 +123,20 @@ except ImportError:
 
 
 def api_validation(args=None):
-    # zone domain length must be less than 250 chars
+    '''
+    Perform some validation which will be enforced by Memset's API (see:
+    https://www.memset.com/apidocs/methods_dns.html#dns.zone_record_create)
+    '''
+    # zone domain length must be less than 250 chars.
     if len(args['domain']) > 250:
         stderr = 'Zone domain must be less than 250 characters in length.'
         module.fail_json(failed=True, msg=stderr, stderr=stderr)
 
 
 def check(args=None):
-    # get the zones and check if the relevant zone exists
+    '''
+    Support for running with check mode.
+    '''
     retvals = dict()
 
     api_method = 'dns.zone_list'
@@ -138,7 +144,7 @@ def check(args=None):
 
     zone_exists, counter = check_zone(data=response, name=args['name'])
 
-    # set changed to true if the operation would cause a change
+    # set changed to true if the operation would cause a change.
     has_changed = ((zone_exists and args['state'] == 'absent') or (not zone_exists and args['state'] == 'present'))
 
     retvals['changed'] = has_changed
@@ -148,13 +154,17 @@ def check(args=None):
 
 
 def create_zone(args=None, zone_exists=None, payload=None):
+    '''
+    At this point we already know whether the zone exists, so we
+    just need to make the API reflect the desired state.
+    '''
     has_changed, has_failed = False, False
     msg, memset_api = None, None
 
     if not zone_exists:
-        api_method = 'dns.zone_create'
         payload['ttl'] = args['ttl']
         payload['nickname'] = args['name']
+        api_method = 'dns.zone_create'
         has_failed, msg, response = memset_api_call(api_key=args['api_key'], api_method=api_method, payload=payload)
         if not has_failed:
             has_changed = True
@@ -165,16 +175,20 @@ def create_zone(args=None, zone_exists=None, payload=None):
             if zone['nickname'] == args['name']:
                 break
         if zone['ttl'] != args['ttl']:
+            # update the zone if the desired TTL is different.
             payload['id'] = zone['id']
             payload['ttl'] = args['ttl']
             api_method = 'dns.zone_update'
             has_failed, msg, response = memset_api_call(api_key=args['api_key'], api_method=api_method, payload=payload)
             if not has_failed:
                 has_changed = True
-    # populate return var with zone info
+
+    # populate return var with zone info.
     api_method = 'dns.zone_list'
     _has_failed, _msg, response = memset_api_call(api_key=args['api_key'], api_method=api_method)
+
     zone_exists, msg, counter, zone_id = get_zone_id(zone_name=args['name'], current_zones=response.json())
+
     if zone_exists:
         payload = dict()
         payload['id'] = zone_id
@@ -188,6 +202,11 @@ def create_zone(args=None, zone_exists=None, payload=None):
 
 
 def delete_zone(args=None, zone_exists=None, payload=None):
+    '''
+    Deletion requires extra sanity checking as the zone cannot be
+    deleted if it contains domains or records. Setting force=true
+    will override this behaviour.
+    '''
     has_changed, has_failed = False, False
     msg, memset_api = None, None
 
@@ -205,19 +224,24 @@ def delete_zone(args=None, zone_exists=None, payload=None):
                     domain_count = len(zone['domains'])
                     record_count = len(zone['records'])
             if (domain_count > 0 or record_count > 0) and args['force'] is False:
+                # we need to fail out if force was not explicitly set.
                 stderr = 'Zone contains domains or records and force was not used.'
-                has_failed, has_changed = True, False
+                has_failed = True
+                has_changed = False
                 module.fail_json(failed=has_failed, changed=has_changed, msg=msg, stderr=stderr, rc=1)
             api_method = 'dns.zone_delete'
             payload['id'] = zone_id
             has_failed, msg, response = memset_api_call(api_key=args['api_key'], api_method=api_method, payload=payload)
             if not has_failed:
                 has_changed = True
-                # return raw JSON from API in named var and then unset msg var so we aren't returning the same thing twice
+                # return raw JSON from API in named var and then unset msg var so we aren't returning the same thing twice.
                 memset_api = msg
                 msg = None
         else:
-            has_failed, has_changed = True, False
+            # zone names are not unique, so we cannot safely delete the requested
+            # zone at this time.
+            has_failed = True
+            has_changed = False
             msg = 'Unable to delete zone as multiple zones with the same name exist.'
     else:
         has_failed, has_changed = False, False
@@ -226,14 +250,21 @@ def delete_zone(args=None, zone_exists=None, payload=None):
 
 
 def create_or_delete(args=None):
+    '''
+    We need to perform some initial sanity checking and also look
+    up required info before handing it off to create or delete.
+    '''
     retvals, payload = dict(), dict()
     has_failed, has_changed = False, False
     msg, memset_api, stderr = None, None, None
 
-    # get the zones and check if the relevant zone exists
+    # get the zones and check if the relevant zone exists.
     api_method = 'dns.zone_list'
     _has_failed, _msg, response = memset_api_call(api_key=args['api_key'], api_method=api_method)
     if _has_failed:
+        # this is the first time the API is called; incorrect credentials will
+        # manifest themselves at this point so we need to ensure the user is
+        # informed of the reason.
         retvals['failed'] = _has_failed
         retvals['msg'] = _msg
 
@@ -243,6 +274,7 @@ def create_or_delete(args=None):
 
     if args['state'] == 'present':
         has_failed, has_changed, memset_api, msg = create_zone(args=args, zone_exists=zone_exists, payload=payload)
+
     elif args['state'] == 'absent':
         has_failed, has_changed, memset_api, msg = delete_zone(args=args, zone_exists=zone_exists, payload=payload)
 
@@ -271,12 +303,13 @@ def main():
     if not HAS_REQUESTS:
         module.fail_json(msg='requests required for this module')
 
+    # populate the dict with the user-provided vars.
     args = dict()
     for key, arg in module.params.items():
         args[key] = arg
     args['check_mode'] = module.check_mode
 
-    # validate some API-specific limitations
+    # validate some API-specific limitations.
     api_validation(args=args)
 
     if module.check_mode:
