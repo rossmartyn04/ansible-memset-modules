@@ -218,10 +218,9 @@ def main():
         module.fail_json(msg='requests required for this module')
 
     args = dict()
-    args['state'] = module.params['state']
-    args['api_key'] = module.params['api_key']
-    args['domain'] = module.params['domain']
-    args['zone'] = module.params['zone']
+    for key, arg in module.params.items():
+        args[key] = arg
+    args['check_mode'] = module.check_mode
 
     # validate some API-specific limitations
     api_validation(args=args)
