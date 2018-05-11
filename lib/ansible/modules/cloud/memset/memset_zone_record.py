@@ -160,7 +160,7 @@ except ImportError:
 
 def api_validation(args=None):
     '''
-    perform some validation which will be enforced by Memset's API (see:
+    Perform some validation which will be enforced by Memset's API (see:
     https://www.memset.com/apidocs/methods_dns.html#dns.zone_record_create)
     '''
     failed_validation = False
@@ -279,7 +279,8 @@ def delete_zone_record(args=None, records=None, payload=None):
 def create_or_delete(args=None):
     '''
     We need to perform some initial sanity checking and also look
-    up required info before handing it off to create or delete.
+    up required info before handing it off to create or delete functions.
+    Check mode is integrated into the create or delete functions.
     '''
     has_failed, has_changed = False, False
     msg, memset_api, stderr = None, None, None
