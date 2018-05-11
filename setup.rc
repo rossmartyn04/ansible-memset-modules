@@ -1,4 +1,0 @@
-#!/bin/sh
-
-export ANSIBLE_MODULE_UTILS=$(pwd)/lib/ansible/module_utils/
-export ANSIBLE_LIBRARY=$(pwd)/lib/ansible/modules/cloud/memset/
