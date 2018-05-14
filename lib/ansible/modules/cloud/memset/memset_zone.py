@@ -122,8 +122,8 @@ def api_validation(args=None):
     https://www.memset.com/apidocs/methods_dns.html#dns.zone_record_create)
     '''
     # zone domain length must be less than 250 chars.
-    if len(args['domain']) > 250:
-        stderr = 'Zone domain must be less than 250 characters in length.'
+    if len(args['name']) > 250:
+        stderr = 'Zone name must be less than 250 characters in length.'
         module.fail_json(failed=True, msg=stderr, stderr=stderr)
 
 
