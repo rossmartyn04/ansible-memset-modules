@@ -18,7 +18,7 @@ DOCUMENTATION = '''
 module: memset_zone_record
 author: "Simon Weald (@analbeard)"
 version_added: "2.6"
-short_description: Manage zone records.
+short_description: Create and delete records in Memset DNS zones.
 notes:
   - Zones can be thought of as a logical group of domains, all of which share the
     same DNS records (i.e. they point to the same IP). An API key generated via the
@@ -42,7 +42,6 @@ options:
             - The address for this record (can be IP or text string depending on record type).
         aliases: [ ip, data ]
     priority:
-        required: false
         description:
             - C(SRV) and C(TXT) record priority, in the range 0 > 999 (inclusive).
     record:
@@ -55,13 +54,11 @@ options:
             - The type of DNS record to create.
         choices: [ A, AAAA, CNAME, MX, NS, SRV, TXT ]
     relative:
-        required: false
         type: bool
         description:
             - If set then the current domain is added onto the address field for C(CNAME), C(MX), C(NS)
               and C(SRV)record types.
     ttl:
-        required: false
         description:
             - The record's TTL in seconds (will inherit zone's TTL if not explicitly set). This must be a
               valid int from U(https://www.memset.com/apidocs/methods_dns.html#dns.zone_record_create).
@@ -70,8 +67,6 @@ options:
         required: true
         description:
             - The name of the zone to which to add the record to.
-requirements:
-    - "requests >= 2.0.0"
 '''
 
 EXAMPLES = '''
@@ -147,15 +142,10 @@ memset_api:
       sample: "b0bb1ce851aeea6feeb2dc32fe83bf9c"
 '''
 
+from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.memset import get_zone_id
 from ansible.module_utils.memset import memset_api_call
 from ansible.module_utils.memset import get_zone_id
-
-try:
-    import requests
-    HAS_REQUESTS = True
-except ImportError:
-    HAS_REQUESTS = False
 
 
 def api_validation(args=None):
@@ -352,9 +342,6 @@ def main():
         supports_check_mode=True
     )
 
-    if not HAS_REQUESTS:
-        module.fail_json(msg='requests required for this module')
-
     # populate the dict with the user-provided vars.
     args = dict()
     for key, arg in module.params.items():
@@ -371,7 +358,6 @@ def main():
     else:
         module.exit_json(**retvals)
 
-from ansible.module_utils.basic import AnsibleModule
 
 if __name__ == '__main__':
     main()

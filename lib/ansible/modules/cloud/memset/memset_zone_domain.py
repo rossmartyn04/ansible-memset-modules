@@ -18,12 +18,12 @@ DOCUMENTATION = '''
 module: memset_zone_domain
 author: "Simon Weald (@analbeard)"
 version_added: "2.6"
-short_description: Manage zone domains.
+short_description: Create and delete domains in Memset DNS zones.
 notes:
   - Zone domains can be thought of as a collection of domains, all of which share the
     same DNS records (i.e. they point to the same IP). An API key generated via the
     Memset customer control panel is needed with the following minimum scope -
-    I(dns.zone_domain_create), I(dns.zone_domain_delete), I(dns.zone_domain_list.
+    I(dns.zone_domain_create), I(dns.zone_domain_delete), I(dns.zone_domain_list).
 description:
     - Manage DNS zone domains in a Memset account.
 options:
@@ -45,8 +45,6 @@ options:
         required: true
         description:
             - The zone to add the domain to (this must already exist).
-requirements:
-    - "requests >= 2.0.0"
 '''
 
 EXAMPLES = '''
@@ -78,15 +76,10 @@ memset_api:
       sample: "b0bb1ce851aeea6feeb2dc32fe83bf9c"
 '''
 
+from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.memset import get_zone_id
 from ansible.module_utils.memset import check_zone_domain
 from ansible.module_utils.memset import memset_api_call
-
-try:
-    import requests
-    HAS_REQUESTS = True
-except ImportError:
-    HAS_REQUESTS = False
 
 
 def api_validation(args=None):
@@ -241,9 +234,6 @@ def main():
         supports_check_mode=True
     )
 
-    if not HAS_REQUESTS:
-        module.fail_json(msg='requests required for this module')
-
     # populate the dict with the user-provided vars.
     args = dict()
     for key, arg in module.params.items():
@@ -273,7 +263,6 @@ def main():
     else:
         module.exit_json(**retvals)
 
-from ansible.module_utils.basic import AnsibleModule
 
 if __name__ == '__main__':
     main()

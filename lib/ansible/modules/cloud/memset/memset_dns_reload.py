@@ -41,8 +41,6 @@ options:
               when the job has completed (unless the 30 second timeout is reached first).
               If the timeout is reached then the task will not be marked as failed, but
               stderr will indicate that the polling failed.
-requirements:
-    - "requests >= 2.0.0"
 '''
 
 EXAMPLES = '''
@@ -88,13 +86,9 @@ memset_api:
 '''
 
 from time import sleep
-from ansible.module_utils.memset import memset_api_call
 
-try:
-    import requests
-    HAS_REQUESTS = True
-except ImportError:
-    HAS_REQUESTS = False
+from ansible.module_utils.basic import AnsibleModule
+from ansible.module_utils.memset import memset_api_call
 
 
 def poll_reload_status(api_key=None, job_id=None, payload=None):
@@ -179,9 +173,6 @@ def main():
         supports_check_mode=False
     )
 
-    if not HAS_REQUESTS:
-        module.fail_json(msg='requests required for this module')
-
     # populate the dict with the user-provided vars.
     args = dict()
     for key, arg in module.params.items():
@@ -194,7 +185,6 @@ def main():
     else:
         module.exit_json(**retvals)
 
-from ansible.module_utils.basic import AnsibleModule
 
 if __name__ == '__main__':
     main()
