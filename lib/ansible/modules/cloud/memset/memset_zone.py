@@ -18,7 +18,7 @@ DOCUMENTATION = '''
 module: memset_zone
 author: "Simon Weald (@analbeard)"
 version_added: "2.6"
-short_description: Manage zones.
+short_description: Creates and deletes Memset DNS zones.
 notes:
   - Zones can be thought of as a logical group of domains, all of which share the
     same DNS records (i.e. they point to the same IP). An API key generated via the
@@ -43,7 +43,6 @@ options:
               value has at most 250 characters.
         aliases: [ nickname ]
     ttl:
-        required: false
         description:
             - The default TTL for all records created in the zone. This must be a
               valid int from U(https://www.memset.com/apidocs/methods_dns.html#dns.zone_create).
