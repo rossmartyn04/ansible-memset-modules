@@ -111,15 +111,10 @@ memset_api:
       sample: 300
 '''
 
+from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.memset import check_zone
 from ansible.module_utils.memset import get_zone_id
 from ansible.module_utils.memset import memset_api_call
-
-try:
-    import requests
-    HAS_REQUESTS = True
-except ImportError:
-    HAS_REQUESTS = False
 
 
 def api_validation(args=None):
@@ -300,9 +295,6 @@ def main():
         supports_check_mode=True
     )
 
-    if not HAS_REQUESTS:
-        module.fail_json(msg='requests required for this module')
-
     # populate the dict with the user-provided vars.
     args = dict()
     for key, arg in module.params.items():
@@ -322,7 +314,6 @@ def main():
     else:
         module.exit_json(**retvals)
 
-from ansible.module_utils.basic import AnsibleModule
 
 if __name__ == '__main__':
     main()
