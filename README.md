@@ -4,10 +4,10 @@ These modules are a WIP location to develop them outside of the Ansible source t
 
 ## Completed modules:
 
- * memset_dns_reload
- * memset_zone
- * memset_zone_domain
- * memset_zone_record
+ * [memset_dns_reload](http://docs.ansible.com/ansible/devel/modules/memset_dns_reload_module.html)
+ * [memset_zone](http://docs.ansible.com/ansible/devel/modules/memset_zone_module.html)
+ * [memset_zone_domain](http://docs.ansible.com/ansible/devel/modules/memset_zone_domain_module.html)
+ * [memset_zone_record](http://docs.ansible.com/ansible/devel/modules/memset_zone_record_module.html)
 
 ## Roadmap
 
