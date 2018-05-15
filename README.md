@@ -1,39 +1,34 @@
-# Ansible Modules for Memset's DNS
+# Ansible modules for Memset resources
 
-These modules are currently under development and may well change significantly.
+These modules are a WIP location to develop them outside of the Ansible source tree. Once they are complete they are then merged to the Ansible repo.
 
-## Requirements
+## Completed modules:
 
-You'll need an API key with the following minimum scopes:
+ * memset_dns_reload
+ * memset_zone
+ * memset_zone_domain
+ * memset_zone_record
 
- * dns.reload
- * dns.reverse_map_list
- * dns.reverse_map_update
- * dns.zone_create
- * dns.zone_delete
- * dns.zone_domain_create
- * dns.zone_domain_delete
- * dns.zone_domain_info
- * dns.zone_domain_list
- * dns.zone_domain_update
- * dns.zone_info
- * dns.zone_list
- * dns.zone_record_create
- * dns.zone_record_delete
- * dns.zone_record_info
- * dns.zone_record_list
- * dns.zone_record_update
- * dns.zone_update
- * job.status
+## Roadmap
 
-## Setup
+### Server management
 
-To test these modules they do not need to exist in the Ansible modules directory - provided is a script to configure the relevant Ansible module directories:
+ * memset_server_facts:
+   * return facts about all servers which match provided filters.
+ * memset_server_snapshot_list:
+ * memset_server_snapshot:
+   * take or delete snapshots.
+ * memset_server_status_list:
+   * return status of all servers
 
-    git clone https://github.com/analbeard/ansible-memset-dns.git
-    cd ansible-memset-dns
-    source setup.rc
+### Memstore
+ * memset_memstore_container:
+   * create/delete container.
+   * set acls/cdn
+ * memset_memstore_user:
+   * create/delete users
 
-You'll also need to configure the secrets file to populate the DNS manager with:
+### Future work
 
-    cp secrets.yaml.example secrets.yaml
+ * Loadbalancer manipulation
+ * Firewalling
