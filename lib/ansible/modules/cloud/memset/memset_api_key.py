@@ -127,6 +127,14 @@ from ansible.module_utils.memset import memset_api_call
 
 
 def api_validation(args=None):
+    '''
+    Perform some validation which will be enforced by Memset's API (see:
+    https://www.memset.com/apidocs/methods_apikey.html#apikey.create).
+    '''
+    # comment length must be less than 250 chars
+    if len(args['comment']) > 255:
+        stderr = 'Comment must be less than 255 characters in length.'
+        module.fail_json(failed=True, msg=stderr, stderr=stderr)
 
 
 def create_key(args=None, payload=None):
