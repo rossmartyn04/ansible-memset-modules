@@ -79,6 +79,7 @@ def main():
     global module
     module = AnsibleModule(
         argument_spec=dict(
+            state=dict(required=True, choices=['present', 'absent'], type='str'),
             api_key=dict(required=True, type='str', no_log=True)
         ),
         supports_check_mode=False
@@ -88,6 +89,7 @@ def main():
     args = dict()
     for key, arg in module.params.items():
         args[key] = arg
+    args['check_mode'] = module.check_mode
 
     retvals = create_or_delete_stuff(args)
 
