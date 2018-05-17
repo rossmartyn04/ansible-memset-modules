@@ -11,6 +11,12 @@ These modules are a WIP location to develop them outside of the Ansible source t
 
 ## Roadmap
 
+### Account management
+
+ * memset_api_key:
+   * create/delete api keys
+   * set scopes on keys
+
 ### Server management
 
  * memset_server_facts:
