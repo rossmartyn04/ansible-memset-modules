@@ -54,7 +54,7 @@ def memset_api_call(api_key, api_method, payload=None):
     response = Response()
 
     # if we've already started preloading the payload then copy it
-    # and use that, otherwise we need to isntantiate it.
+    # and use that, otherwise we need to instantiate it.
     if payload is None:
         payload = dict()
     else:
